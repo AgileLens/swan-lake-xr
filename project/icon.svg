@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+      <stop offset="0%" stop-color="#1b2a52"/>
+      <stop offset="100%" stop-color="#070b1c"/>
+    </radialGradient>
+  </defs>
+  <rect width="128" height="128" rx="24" fill="url(#bg)"/>
+  <circle cx="88" cy="30" r="12" fill="#f5f1dc" opacity="0.95"/>
+  <circle cx="88" cy="30" r="18" fill="#f5f1dc" opacity="0.18"/>
+  <!-- moonlit water -->
+  <path d="M0 92 Q 32 88 64 92 T 128 92 L128 128 L0 128 Z" fill="#0d1733"/>
+  <path d="M78 96 Q 88 94 98 96 L 96 100 Q 88 98 80 100 Z" fill="#f5f1dc" opacity="0.35"/>
+  <!-- swan -->
+  <path d="M44 88
+           C 30 88 24 78 26 70
+           C 28 74 34 78 44 78
+           C 56 78 60 70 58 60
+           C 56 50 48 46 48 38
+           C 48 30 54 26 60 26
+           C 66 26 70 30 70 36
+           L 76 34
+           L 70 40
+           C 70 44 66 46 62 50
+           C 58 54 64 62 66 70
+           C 68 80 60 88 44 88 Z"
+        fill="#f8f6ee"/>
+  <path d="M60 26 C 63 25 68 26 70 30 L 78 33 L 70 37 Z" fill="#e08a2c"/>
+  <circle cx="62" cy="31" r="1.6" fill="#101020"/>
+</svg>

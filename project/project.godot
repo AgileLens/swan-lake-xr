@@ -6,6 +6,7 @@ config_version=5
 config/name="Swan Lake"
 config/version="0.1.0"
 run/main_scene="res://scenes/main.tscn"
+config/icon="res://icon.svg"
 config/features=PackedStringArray("4.7", "Mobile")
 
 [audio]

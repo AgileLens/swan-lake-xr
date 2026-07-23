@@ -4,3 +4,4 @@ out/
 *.apk
 .DS_Store
 assets_src/downloads/
+project/android/
