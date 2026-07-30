@@ -13,6 +13,7 @@ var grace := 8.0  # let startup settle
 # Desktop look-dev renders far below 72fps, so the governor would strip the very
 # features a capture is meant to show. Off for --shot; always on in a headset.
 var enabled := true
+var _log_t := 0
 
 func setup(m) -> void:
 	main = m
@@ -45,6 +46,17 @@ func _process(delta: float) -> void:
 			hud.text = "fps %d | tier %d | refl %s | in L:%s R:%s" % [
 				int(avg), tier, main.reflections.mode_name(),
 				main.hand_input.source_name("left"), main.hand_input.source_name("right")]
+		# Android's gfxinfo reports zero frames for this app — Godot renders through
+		# its own Vulkan/XR swapchain, not Choreographer — so the engine's own
+		# counters are the only way to profile from outside the headset.
+		_log_t += 1
+		if _log_t >= 3:
+			_log_t = 0
+			print("[perf] fps=%.1f tier=%d refl=%s draws=%d prims=%d vram=%.1fMB" % [
+				avg, tier, main.reflections.mode_name(),
+				Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
+				Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0])
 		if enabled and grace <= 0.0 and avg < 71.0:
 			_step_down()
 			samples.clear()
