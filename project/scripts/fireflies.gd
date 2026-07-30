@@ -78,9 +78,14 @@ func _process(delta: float) -> void:
 		attractor.global_position = Vector3(main.gather_point.x, 2.2, main.gather_point.z)
 		attractor.strength = -4.0
 		attractor.radius = 4.5
-	elif ce > 0.4:
+	elif ce > 0.12:
+		# Alex in-headset: "am I conducting the fireflies, I can't tell?" — the old
+		# gate (ce > 0.4) plus a 2.8m radius meant a gentle gesture did nothing and
+		# a hard one only tugged whatever happened to be within arm's reach. The pull
+		# now starts as soon as the baton moves and reaches far enough to actually
+		# catch some, so cause and effect are legible.
 		attractor.global_position = main.conductor.tip_position()
-		attractor.strength = -2.2 * ce
-		attractor.radius = 2.8
+		attractor.strength = -(1.5 + 7.5 * ce)
+		attractor.radius = 5.5 + 2.5 * ce
 	else:
 		attractor.strength = 0.0

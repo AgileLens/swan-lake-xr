@@ -25,23 +25,13 @@ def lowpass(x, alpha):
         acc += alpha * (x[i] - acc); y[i] = acc
     return y
 
-# --- water plops (4 variants): sine pitch-drop + bubble resonance ---
-chord = [123.47, 146.83, 185.0, 246.94]  # B2 D3 F#3 B3
-for i, f1 in enumerate(chord):
-    n = int(SR * 0.30); t = np.arange(n) / SR
-    f = f1 * 2.6 * np.exp(-t * 16) + f1          # quick drop onto the chord tone
-    ph = 2 * np.pi * np.cumsum(f) / SR
-    body = np.sin(ph) * env(n, 0.003, 0.07)
-    octv = np.sin(2 * np.pi * f1 * 2.0 * t) * env(n, 0.01, 0.05) * 0.3
-    click = rng.normal(0, 1, n) * env(n, 0.001, 0.004) * 0.18
-    save(f"plop_{i+1}", lowpass(body + octv + click, 0.35))
+# --- conducting touches (4 variants) ---
+# Were pitch-dropping sines with a noise click — the "bloop" that read as arcade.
+# Now plucked chord tones: the same job (mark the touch, in key) with a voice that
+# belongs to the orchestra. Defined after harp() below, so this block runs late.
+PLOP_CHORD = [123.47, 146.83, 185.0, 246.94]  # B2 D3 F#3 B3
 
-# --- splash (fish / landing) ---
-n = int(SR * 0.6); t = np.arange(n) / SR
-noise = rng.normal(0, 1, n)
-sweep = lowpass(noise, 0.5) * env(n, 0.006, 0.16)
-spray = lowpass(rng.normal(0, 1, n), 0.85) * env(n, 0.05, 0.28) * 0.5
-save("splash", sweep + spray)
+# (splash is generated after harp() is defined, with the other plucked voices)
 
 # --- pentatonic chimes (constellation notes + hatch chord), soft FM bells ---
 freqs = [246.94, 293.66, 329.63, 369.99, 440.0, 493.88, 587.33]  # B3 D4 E4 F#4 A4 B4 D5 (B minor pent.)
@@ -133,6 +123,18 @@ for i, f in enumerate(harp_notes):
 for i, f in enumerate([123.47, 146.83, 185.0, 246.94]):
     save(f"harp_low_{i+1}", harp(f, dur=2.6, damp=0.75, bright=0.28) * 0.7)
 
+# conducting touches — short, damped plucks on the same chord tones
+for i, f in enumerate(PLOP_CHORD):
+    save(f"plop_{i+1}", harp(f, dur=1.1, damp=0.8, bright=0.35) * 0.8)
+
+# a swan settling on the water: a soft low third, barely voiced — it should read
+# as the water answering, not as an effect
+_sp = np.zeros(int(SR * 1.6))
+for _f, _g in [(123.47, 1.0), (146.83, 0.6)]:
+    _s = harp(_f, dur=1.5, damp=0.85, bright=0.2) * _g
+    _sp[: len(_s)] += _s
+save("splash", _sp * 0.55)
+
 # hatch chord = 1+3+5 pentatonic stack
 n = int(SR * 2.2); t = np.arange(n) / SR
 x = np.zeros(n)
@@ -140,22 +142,42 @@ for f, g in [(246.94, 1.0), (293.66, 0.8), (369.99, 0.7), (493.88, 0.5)]:
     x += np.sin(2 * np.pi * f * t + 1.8 * np.sin(2 * np.pi * f * 3.02 * t) * np.exp(-t * 2.5)) * np.exp(-t * 1.7) * g
 save("hatch_chord", x)
 
-# --- firework: whoosh (launch) + crackle (burst) ---
-n = int(SR * 0.7); t = np.arange(n) / SR
-noise = rng.normal(0, 1, n)
-f_c = 300 + 2400 * (t / t[-1]) ** 1.6
-carrier = np.sin(2 * np.pi * np.cumsum(f_c) / SR)
-save("whoosh", lowpass(noise, 0.25) * carrier * env(n, 0.05, 0.4))
+# --- firework: launch + burst, as harp gestures ---
+# Both were noise-based (a filtered-noise whoosh and 90 random pops). In the
+# headset, over a live orchestra, that reads as "video game pew pew" — Alex's
+# words. Everything one-shot in this piece is now a plucked note in B minor;
+# only the weather beds below stay noise, because wind and rain ARE noise.
 
-n = int(SR * 1.3); x = np.zeros(n)
-boom = np.sin(2 * np.pi * 55 * np.arange(int(SR*0.5)) / SR) * env(int(SR*0.5), 0.002, 0.12)
-x[:len(boom)] += boom * 1.2
-for _ in range(90):
-    p = int(rng.uniform(0.03, 1.0) * (n - 400))
-    ln = int(rng.uniform(0.004, 0.02) * SR)
-    pop = rng.normal(0, 1, ln) * np.exp(-np.arange(ln) / (0.003 * SR)) * rng.uniform(0.2, 1.0) * np.exp(-p / (0.45 * SR * 1.0))
-    x[p:p+ln] += pop
-save("crackle", lowpass(x, 0.6))
+B_MINOR = [123.47, 146.83, 185.00, 246.94, 293.66, 369.99, 493.88, 587.33, 739.99]
+
+
+def mix_at(dst, src, at, gain=1.0):
+    """Sum src into dst starting at sample `at`, clipping to length."""
+    end = min(len(dst), at + len(src))
+    if end > at:
+        dst[at:end] += src[: end - at] * gain
+
+
+# launch: a rising arpeggio that lifts with the rocket
+n = int(SR * 0.75)
+x = np.zeros(n)
+for i, f in enumerate(B_MINOR[3:8]):
+    mix_at(x, harp(f, dur=0.7, damp=0.65, bright=0.45), int(SR * 0.055 * i), 0.75 ** i)
+save("whoosh", x)
+
+# burst: the chord blooms, then scatters into sparkling upper-octave notes that
+# thin out over time — the shape of the old crackle, played on a harp
+n = int(SR * 2.0)
+x = np.zeros(n)
+for f, g in [(246.94, 1.0), (293.66, 0.85), (369.99, 0.8), (493.88, 0.7), (739.99, 0.5)]:
+    mix_at(x, harp(f, dur=1.9, damp=0.45, bright=0.7), 0, g)
+sparkle_notes = [493.88, 587.33, 739.99, 987.77, 1174.66]
+for k in range(26):
+    at = int(rng.uniform(0.10, 1.30) * SR)
+    f = sparkle_notes[rng.integers(0, len(sparkle_notes))]
+    # later sparkles are quieter, so the burst decays instead of rattling on
+    mix_at(x, harp(f, dur=0.55, damp=0.8, bright=0.85), at, 0.5 * float(np.exp(-at / (0.6 * SR))))
+save("crackle", x)
 
 # --- loopable weather beds (crossfade tail into head for seamless loop) ---
 def loopify(x, fade=0.4):

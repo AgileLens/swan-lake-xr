@@ -18,6 +18,13 @@ var flap_phase := -1.0
 var gather_slot := Vector3.INF
 var bow_amount := 0.0
 var neck_rest_rot: Vector3
+# Head-tracking toward the conductor's baton. Eased rather than snapped, so a
+# swan turns to look instead of twitching — and only when the baton is actually
+# near it and roughly in front, so the whole flock doesn't stare in unison.
+var _watch_gain := 0.0
+var _watch_target := 0.0
+const WATCH_RANGE := 9.0
+const WATCH_MAX_YAW := 1.15  # rad; past this a real bird turns its body, not its neck
 var arrived := false
 var is_cygnet := false
 var follow_target: Node3D = null
@@ -154,6 +161,7 @@ func update_swan(delta: float, t: float) -> void:
 	if preen_timer <= 0.0 and preen_t < 0.0 and gather_slot == Vector3.INF and not flock.attract_active:
 		preen_t = 0.0
 		preen_timer = randf_range(45.0, 95.0)
+	_watch_gain = lerpf(_watch_gain, _watch_target, clampf(delta * 3.5, 0.0, 1.0))
 	if neck:
 		if preen_t >= 0.0:
 			preen_t += delta / 4.0
@@ -167,6 +175,8 @@ func update_swan(delta: float, t: float) -> void:
 		else:
 			var idle := sin(t * 0.8 + wander_seed * 5.0) * 0.06
 			neck.rotation = neck_rest_rot + Vector3(idle - bow_amount * 0.85, 0, 0)
+			_watch_baton()
+	_update_watch_target()
 	flap_timer -= delta
 	if flap_timer <= 0.0 and flap_phase < 0.0:
 		flap_phase = 0.0
@@ -230,3 +240,53 @@ func _set_wings(raise: float) -> void:
 func trigger_flap() -> void:
 	if flap_phase < 0.0:
 		flap_phase = 0.0
+
+# ---------------------------------------------------------------- baton watching
+
+func _baton_point() -> Vector3:
+	# the same tip the sparkle trail and aim ray use, so a swan looks exactly where
+	# the player sees their baton — not at an approximation of it
+	if main.conductor == null:
+		return Vector3.INF
+	var tip: Vector3 = main.conductor.tip_position()
+	return Vector3.INF if tip == Vector3.ZERO else tip
+
+func _update_watch_target() -> void:
+	_watch_target = 0.0
+	var tip: Vector3 = _baton_point()
+	if tip == Vector3.INF:
+		return
+	var to_tip: Vector3 = tip - global_position
+	var dist := to_tip.length()
+	if dist > WATCH_RANGE:
+		return
+	to_tip.y = 0.0
+	if to_tip.length() < 0.05:
+		return
+	# only if the baton is within the swan's forward arc — a swan facing away
+	# shouldn't crane its neck backwards
+	var fwd := Vector3(-sin(heading), 0, -cos(heading))
+	var yaw := fwd.signed_angle_to(to_tip.normalized(), Vector3.UP)
+	if absf(yaw) > WATCH_MAX_YAW:
+		return
+	# closer + more energetic conducting = more attention
+	var near := 1.0 - clampf(dist / WATCH_RANGE, 0.0, 1.0)
+	var energy: float = clampf(main.conductor.conduct_energy, 0.0, 1.0)
+	_watch_target = clampf(near * (0.35 + energy * 0.65), 0.0, 1.0)
+
+func _watch_baton() -> void:
+	if _watch_gain < 0.01:
+		return
+	var tip: Vector3 = _baton_point()
+	if tip == Vector3.INF:
+		return
+	var to_tip: Vector3 = tip - global_position
+	var flat := Vector3(to_tip.x, 0.0, to_tip.z)
+	if flat.length() < 0.05:
+		return
+	var fwd := Vector3(-sin(heading), 0, -cos(heading))
+	var yaw := fwd.signed_angle_to(flat.normalized(), Vector3.UP)
+	# a raised baton lifts the head too, which is what sells "it's watching you"
+	var pitch := atan2(to_tip.y - 0.35, flat.length())
+	neck.rotation.y += clampf(yaw, -WATCH_MAX_YAW, WATCH_MAX_YAW) * _watch_gain
+	neck.rotation.x -= clampf(pitch, -0.5, 0.7) * _watch_gain * 0.6

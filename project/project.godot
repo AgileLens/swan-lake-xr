@@ -37,5 +37,10 @@ openxr/extensions/hand_tracking=true
 ; Leaving it off means "hand tracker has data" cleanly implies "bare hands".
 openxr/extensions/hand_tracking_unobstructed_data_source=true
 openxr/extensions/hand_tracking_controller_data_source=false
-openxr/extensions/hand_interaction_profile=true
+; Deliberately OFF. It made PICO's runtime report "ActiveInputType is hand" and
+; spam XR_ERROR_PERMISSION_INSUFFICIENT for every action float — the same class of
+; hazard as Tank Commander VR v0.6.16, where the hand-aim profile hijacked the
+; controller menu ray. Pinch here is measured from joint positions, not from this
+; profile's actions, so nothing is lost by leaving it off.
+openxr/extensions/hand_interaction_profile=false
 shaders/enabled=true
