@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bx6gfbq1005k0"
-path="res://.godot/imported/swan.glb-f91f118c3203d08ad30fa59732e4ad43.scn"
+uid="uid://cm1qsyc3wacgn"
+path="res://.godot/imported/fish.glb-98fd282b0b54f90b3bbc8294b62de516.scn"
 
 [deps]
 
-source_file="res://assets/swan.glb"
-dest_files=["res://.godot/imported/swan.glb-f91f118c3203d08ad30fa59732e4ad43.scn"]
+source_file="res://assets/fish.glb"
+dest_files=["res://.godot/imported/fish.glb-98fd282b0b54f90b3bbc8294b62de516.scn"]
 
 [params]
 

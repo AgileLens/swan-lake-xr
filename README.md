@@ -1,44 +1,81 @@
 # Swan Lake XR
 
-An immersive twilight-lake vignette built for the **Pico Swan** headset: stylized swans glide across shader-water under a low moon while Tchaikovsky's *Swan Lake* plays, and you conduct the scene with your controller — ripple the water, draw the flock, trigger a crescendo. Built with Godot 4.7 + OpenXR (PICO vendor loader), fully standalone APK, no PCVR.
+*Swan Lake, on the Swan.* An immersive twilight-lake vignette built by [Agile Lens](https://agilelens.com) for PICO's next-generation **Swan** headset — and any OpenXR standalone device.
 
-Static-viewpoint (dock/stage) design: zero locomotion, zero motion sickness — demo-friendly for LBE/VIP settings.
+You stand on a wooden dock over a moonlit lake. Swans glide past, leaving real wakes in the water. Tchaikovsky's *Swan Lake* (a verified public-domain recording) swells around you, and your controller is a conductor's baton: ripple the water, draw the flock into a moonbeam, light the stars of Cygnus, hatch a cygnet, and end the night with fireworks over the water.
 
-## Quickstart
+![Swan Lake XR — night gather](docs/night_gather.png)
 
-Prereqs (already on alex-mbp): Godot 4.7.1 (`~/dev/tools/godot471`), Android SDK (`~/Library/Android/sdk`), OpenJDK 17 (brew).
+Built entirely with **Godot 4.7 + the OpenXR Vendors plugin**, 100% procedural assets (Blender-scripted models, synthesized-in-key sound effects, shader water/sky), packaged headlessly on macOS. No engine GUI was opened in the making of this app.
+
+## Experience
+
+- **Conduct.** Right trigger ripples the water where you point — the flock banks toward it. Ripple sounds are pitched to B minor and quantized to the music's pulse.
+- **Gather.** Hold grip: the swans assemble in a moonbeam (angled from the actual moon), face you, and bow. Hold long enough and the Act 4 finale takes over.
+- **Finale.** Act 4 swells, fireworks bloom over the lake in mood-matched palettes, fish leap in choreography, and the night closes with a title card.
+- **Moods.** Night / Dusk / Dawn — three complete palettes (sky, water, fog, fireflies, firework colors), tweened live.
+- **Weather.** Clear / Snow / Rain / Breeze — rain patters real ripples across the water.
+- **Swan styles.** Four model tiers from flat-shaded origami to layered-feather detailed, hot-swappable at runtime.
+- **Synesthesia.** Fireflies shift color and pattern with your conducting energy and the orchestra's dynamics; a Fantasia-style sparkle trail follows your baton. With hand tracking, pinch modulates the response.
+- **Easter eggs.** Find and light the seven stars of **Cygnus, the Swan** (each is a chime note in key). Complete the constellation and watch what happens at the nest.
+- **Reflections.** Three water-reflection techniques (analytic / probe / planar mirror camera) behind a live toggle.
+- **Performance governor.** Watches frame rate and sheds effects one notch at a time to hold the target.
+
+## Controls
+
+| Input | Action |
+|---|---|
+| Right trigger | Conduct: ripple burst + attract flock (also taps stars / eggs / menu orbs) |
+| Left trigger | Launch a firework where you point |
+| Either grip (hold) | Gather the flock into the moonbeam |
+| Right A | Cycle mood (Night / Dusk / Dawn) |
+| Right B | Trigger the Act 4 finale |
+| Left X | Cycle weather |
+| Left Y | Settings orbs (swan style, reflections, shadows, sparkles, FPS HUD) |
+
+Desktop preview (no headset): mouse-look + `1/2/3` mood, `SPACE` ripple, `G` gather, `F` finale, `K` firework, `W` weather, `R` reflections, `S` swan style, `C`/`N` easter-egg cheats, `H` FPS HUD, `P` screenshot.
+
+## Build
+
+Requirements: Godot 4.7.1 + export templates, the godot_openxr_vendors 5.1.0 addon (bundled in `project/addons/`), Android SDK (build-tools 35+), JDK 17. Blender 4/5 and Python 3 + numpy regenerate the assets from `assets_src/` — every model and sound is code.
 
 ```bash
-cd /Users/alex/dev/swan-lake-xr && ./build.sh pico   # → out/SwanLake_pico.apk
+./build.sh pico    # → out/SwanLake_pico.apk   (PICO OpenXR loader)
 ```
 
 ```bash
-cd /Users/alex/dev/swan-lake-xr && ./build.sh quest  # → out/SwanLake_quest.apk (same scene, Meta loader — for sanity-testing on any Quest)
+./build.sh quest   # → out/SwanLake_quest.apk  (Meta loader, same scene)
 ```
 
-Install on the Swan (developer mode on, USB or Wi-Fi adb):
+Install to a device in developer mode:
 
 ```bash
-adb install -r /Users/alex/dev/swan-lake-xr/out/SwanLake_pico.apk
+adb install -r out/SwanLake_pico.apk
 ```
 
-Desktop preview (non-XR orbit camera, for look-dev on the Mac):
+Desktop look-dev:
 
 ```bash
-/Users/alex/dev/tools/godot471/Godot.app/Contents/MacOS/Godot --path /Users/alex/dev/swan-lake-xr/project -- --preview
+<godot-binary> --path project -- --preview
 ```
 
 ## Things to Try
 
-1. **Just stand still for 30 seconds.** The flock breathes with the music; a swan will stretch its wings on the next musical swell.
-2. **Point at the water and pull the trigger.** A ripple burst blooms where you point and the swans bank toward it.
-3. **Hold grip.** The flock gathers in a circle and bows — moon shaft brightens, fireflies swirl (the "crescendo" beat for demos).
-4. **Tap A/X.** Cycle mood: Night → Dusk → Dawn. Same choreography, three completely different paintings — pick your favorite and tell Claude.
-5. **On the Mac:** run the desktop preview command above and drag the mouse to orbit — same scene the headset renders.
+1. **Stand still for a minute at night.** Watch a swan preen, the moon streak breathe with the music, and fireflies drift through the reeds.
+2. **Hold grip until the music changes.** The gather-bow held long enough triggers the finale — fireworks included.
+3. **Look up and trace the Swan.** Seven stars pulse faintly overhead. Light all of Cygnus and follow the shooting star to the nest.
+4. **Open the orbs (left Y) and flip swan styles.** Origami → low-poly → organic → detailed, live, mid-glide.
+5. **Set weather to rain, reflections to planar.** Rain rings on mirror-water at dusk is the screenshot you'll send someone.
 
-## Notes
+## Screenshots
 
-- **NDA:** Swan is unreleased ByteDance/Pico hardware — this repo stays private.
-- Music: public-domain recording (see `CREDITS.md`).
-- Renderer: Godot Mobile renderer, shadows off, foveation 2 — per KB technique `godot-metahuman-quest-standalone.md` (measured on XR2 Gen 2; Swan silicon is newer).
-- Built by Agile Lens.
+| | |
+|---|---|
+| ![Dusk fireworks](docs/dusk_fireworks.png) | ![Dawn](docs/dawn_low.png) |
+| ![Swan styles](docs/styles_grid.png) | ![Planar reflections](docs/night_planar.png) |
+
+## Credits
+
+Music: Tchaikovsky, *Swan Lake* Op. 20 — public-domain recording via Wikimedia Commons (see [CREDITS.md](CREDITS.md)). Engine: Godot (MIT). XR loaders: godot_openxr_vendors (MIT). Everything else: © Agile Lens, released under the [MIT License](LICENSE).
+
+Built by **Agile Lens** — real-time immersive design, NYC.

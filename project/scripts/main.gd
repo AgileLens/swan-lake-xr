@@ -1,9 +1,8 @@
 class_name SwanLakeMain
 extends Node3D
-# Swan Lake XR — orchestrator. Builds the entire scene in code (no complex tscn to break).
-# XR when OpenXR initializes (device); desktop preview rig otherwise.
-# NOTE: this Mac has the godot-visionos-pilot OpenXR-OSX streaming runtime installed, so
-# OpenXR "succeeds" on desktop — macOS therefore defaults to preview unless --xr is passed.
+# Swan Lake XR v2 — orchestrator. Scene + systems built in code.
+# macOS defaults to desktop preview (the OpenXR-OSX streaming runtime initializes
+# OpenXR on desktop, so is_initialized() can't be the fallback signal). --xr overrides.
 
 const LAKE_CENTER := Vector3(0, 0, -10)
 
@@ -17,15 +16,30 @@ var sky_mat: ShaderMaterial
 var beam_mat: ShaderMaterial
 var env: Environment
 var moon: DirectionalLight3D
-var fireflies: GPUParticles3D
-var firefly_mat: StandardMaterial3D
 var beam: MeshInstance3D
+var reeds: Array[Node3D] = []
+
+var audio: SfxPool
+var ripples: RippleField
 var flock: SwanFlock
 var music: MusicDirector
-var ripples: RippleField
 var mood: MoodKit
+var conductor: Conductor
+var fireflies: FireflyField
+var weather: WeatherKit
+var fireworks: FireworkShow
+var fishes: FishSchool
+var constellation: CygnusPuzzle
+var nest: SwanNest
+var title: TitleCards
+var menu: OrbMenu
+var reflections: ReflectionRig
+var perf: PerfGovernor
+
 var gather_on := false
 var gather_point := Vector3(0, 0, -6.5)
+var gather_held := 0.0
+var finale_fired_this_gather := false
 var attract_until := 0.0
 var attract_point := Vector3.ZERO
 var beam_alpha := 0.0
@@ -35,22 +49,45 @@ func _ready() -> void:
 	_build_water()
 	_build_dock()
 	_build_shore()
-	_build_fireflies()
 	_build_beam()
-	ripples = RippleField.new()
-	add_child(ripples)
+	_init_xr_or_preview()
+	audio = SfxPool.new(); add_child(audio)
+	ripples = RippleField.new(); add_child(ripples)
 	ripples.water_mat = water_mat
-	flock = SwanFlock.new()
-	add_child(flock)
+	flock = SwanFlock.new(); add_child(flock)
 	flock.main = self
 	flock.spawn(8)
-	music = MusicDirector.new()
-	add_child(music)
-	mood = MoodKit.new()
-	add_child(mood)
+	music = MusicDirector.new(); add_child(music)
+	music.finale_done.connect(_on_finale_done)
+	conductor = Conductor.new(); add_child(conductor)
+	conductor.setup(self)
+	fireflies = FireflyField.new(); add_child(fireflies)
+	fireflies.setup(self)
+	weather = WeatherKit.new(); add_child(weather)
+	weather.setup(self)
+	for r in reeds:
+		weather.register_reed(r)
+	fireworks = FireworkShow.new(); add_child(fireworks)
+	fireworks.setup(self)
+	fishes = FishSchool.new(); add_child(fishes)
+	fishes.setup(self)
+	constellation = CygnusPuzzle.new(); add_child(constellation)
+	constellation.setup(self)
+	nest = SwanNest.new(); add_child(nest)
+	nest.setup(self)
+	reflections = ReflectionRig.new(); add_child(reflections)
+	reflections.setup(self)
+	perf = PerfGovernor.new(); add_child(perf)
+	perf.setup(self)
+	menu = OrbMenu.new(); add_child(menu)
+	menu.setup(self)
+	mood = MoodKit.new(); add_child(mood)
 	mood.setup(self)
 	mood.apply("night", true)
-	_init_xr_or_preview()
+	title = TitleCards.new(); add_child(title)
+	title.setup(self)
+
+# ---------------------------------------------------------------- scene build
 
 func _build_environment() -> void:
 	env = Environment.new()
@@ -77,7 +114,9 @@ func _build_environment() -> void:
 	we.environment = env
 	add_child(we)
 	moon = DirectionalLight3D.new()
-	moon.shadow_enabled = false
+	moon.shadow_enabled = true
+	moon.directional_shadow_max_distance = 26.0
+	moon.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	moon.light_energy = 0.35
 	add_child(moon)
 	_aim_moon(Vector3(-0.22, 0.28, -0.93))
@@ -88,6 +127,11 @@ func _aim_moon(dir_to_moon: Vector3) -> void:
 	if water_mat:
 		water_mat.set_shader_parameter("moon_dir", dir_to_moon)
 	moon.look_at_from_position(Vector3.ZERO, -dir_to_moon, Vector3.UP)
+	if beam and gather_on:
+		_place_beam()
+
+func moon_dir() -> Vector3:
+	return Vector3(sky_mat.get_shader_parameter("moon_dir"))
 
 func _build_water() -> void:
 	var mesh := PlaneMesh.new()
@@ -100,6 +144,7 @@ func _build_water() -> void:
 	mi.mesh = mesh
 	mi.material_override = water_mat
 	mi.position = Vector3(0, 0, -40)
+	mi.layers = 1 | 2
 	add_child(mi)
 
 func _build_dock() -> void:
@@ -111,7 +156,7 @@ func _build_dock() -> void:
 	bm.size = Vector3(2.4, 0.1, 4.0)
 	deck.mesh = bm
 	deck.material_override = wood
-	deck.position = Vector3(0, 0.30, 0.6)  # walkway; user stands near front edge
+	deck.position = Vector3(0, 0.30, 0.6)
 	add_child(deck)
 	for i in 6:
 		var post := MeshInstance3D.new()
@@ -132,7 +177,6 @@ func _build_shore() -> void:
 	dark.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	# far shore hill silhouettes
 	for i in 10:
 		var a := TAU * float(i) / 10.0 + rng.randf_range(-0.15, 0.15)
 		var r := rng.randf_range(70.0, 95.0)
@@ -144,11 +188,10 @@ func _build_shore() -> void:
 		hill.material_override = dark
 		hill.position = LAKE_CENTER + Vector3(cos(a) * r, -0.5, sin(a) * r)
 		add_child(hill)
-	# pine silhouettes on nearer ring (skip the arc behind the dock)
 	for i in 26:
 		var a := rng.randf_range(0.0, TAU)
 		if absf(wrapf(a - PI * 0.5, -PI, PI)) < 0.85:
-			continue  # leave open water toward the moon
+			continue
 		var r := rng.randf_range(46.0, 62.0)
 		var pine := MeshInstance3D.new()
 		var cm := CylinderMesh.new()
@@ -159,7 +202,6 @@ func _build_shore() -> void:
 		pine.material_override = dark
 		pine.position = LAKE_CENTER + Vector3(cos(a) * r, cm.height * 0.4, sin(a) * r)
 		add_child(pine)
-	# reeds: two tight clusters flanking the dock
 	for i in 14:
 		var reed := MeshInstance3D.new()
 		var cm2 := CylinderMesh.new()
@@ -171,52 +213,9 @@ func _build_shore() -> void:
 		var side: float = (1.0 if i % 2 == 0 else -1.0)
 		reed.position = Vector3(side * rng.randf_range(1.5, 2.4), cm2.height * 0.40, rng.randf_range(-0.9, 0.7))
 		reed.rotation.z = rng.randf_range(-0.10, 0.10) * side
+		reed.set_meta("sway0", reed.rotation.z)
 		add_child(reed)
-
-func _build_fireflies() -> void:
-	fireflies = GPUParticles3D.new()
-	fireflies.amount = 70
-	fireflies.lifetime = 7.0
-	fireflies.preprocess = 4.0
-	var pm := ParticleProcessMaterial.new()
-	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pm.emission_box_extents = Vector3(7, 0.9, 5)
-	pm.gravity = Vector3.ZERO
-	pm.initial_velocity_min = 0.05
-	pm.initial_velocity_max = 0.20
-	pm.turbulence_enabled = true
-	pm.turbulence_noise_strength = 0.30
-	pm.turbulence_noise_scale = 1.6
-	pm.scale_min = 0.45
-	pm.scale_max = 1.0
-	fireflies.process_material = pm
-	var quad := QuadMesh.new()
-	quad.size = Vector2(0.05, 0.05)
-	firefly_mat = StandardMaterial3D.new()
-	firefly_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	firefly_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	firefly_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	firefly_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	# radial soft-dot texture so particles read as glow points, not squares
-	var grad := Gradient.new()
-	grad.set_color(0, Color(1, 1, 1, 1))
-	grad.set_color(1, Color(1, 1, 1, 0))
-	var gtex := GradientTexture2D.new()
-	gtex.gradient = grad
-	gtex.fill = GradientTexture2D.FILL_RADIAL
-	gtex.fill_from = Vector2(0.5, 0.5)
-	gtex.fill_to = Vector2(0.5, 0.0)
-	gtex.width = 32
-	gtex.height = 32
-	firefly_mat.albedo_texture = gtex
-	firefly_mat.albedo_color = Color(0.35, 0.6, 0.75, 0.30)
-	firefly_mat.emission_enabled = true
-	firefly_mat.emission = Color(0.55, 0.85, 1.0)
-	firefly_mat.emission_energy_multiplier = 2.0
-	quad.material = firefly_mat
-	fireflies.draw_pass_1 = quad
-	fireflies.position = Vector3(0, 0.9, -4.5)
-	add_child(fireflies)
+		reeds.append(reed)
 
 func _build_beam() -> void:
 	beam = MeshInstance3D.new()
@@ -231,11 +230,23 @@ func _build_beam() -> void:
 	beam_mat = ShaderMaterial.new()
 	beam_mat.shader = load("res://shaders/beam.gdshader")
 	beam.material_override = beam_mat
-	beam.position = gather_point + Vector3(0, 5, 0)
 	beam.visible = false
 	add_child(beam)
 
-# ------------------------------------------------------------------ XR / preview
+func _place_beam() -> void:
+	# beam base sits on the water at the gather point, shaft leans toward the moon
+	var md := moon_dir()
+	beam.position = gather_point + md * 5.0
+	var basis := Basis()
+	var y := md
+	var x := y.cross(Vector3.FORWARD).normalized()
+	if x.length() < 0.5:
+		x = y.cross(Vector3.RIGHT).normalized()
+	var z := x.cross(y).normalized()
+	basis.x = x; basis.y = y; basis.z = z
+	beam.transform.basis = basis
+
+# ---------------------------------------------------------------- XR / preview
 
 func _init_xr_or_preview() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -246,7 +257,7 @@ func _init_xr_or_preview() -> void:
 		xr_active = true
 		get_viewport().use_xr = true
 		origin = XROrigin3D.new()
-		origin.position = Vector3(0, 0.35, 0.6)  # dock deck height; front edge of walkway
+		origin.position = Vector3(0, 0.35, 0.6)
 		add_child(origin)
 		var cam := XRCamera3D.new()
 		origin.add_child(cam)
@@ -255,15 +266,14 @@ func _init_xr_or_preview() -> void:
 			c.tracker = hand
 			c.pose = "aim"
 			origin.add_child(c)
-			_dress_controller(c)
 			c.button_pressed.connect(_on_xr_button.bind(c, true))
 			c.button_released.connect(_on_xr_button.bind(c, false))
 			controllers.append(c)
 	else:
 		var rig := PreviewRig.new()
+		rig.name = "PreviewRig"
 		rig.main = self
 		add_child(rig)
-	# shared reticle
 	reticle = MeshInstance3D.new()
 	var tm := TorusMesh.new()
 	tm.inner_radius = 0.16
@@ -277,51 +287,59 @@ func _init_xr_or_preview() -> void:
 	rm.albedo_color = Color(0.5, 0.8, 1.0, 0.35)
 	reticle.material_override = rm
 	reticle.mesh = tm
+	reticle.layers = 4
 	reticle.visible = false
 	add_child(reticle)
 
-func _dress_controller(c: XRController3D) -> void:
-	var tip := MeshInstance3D.new()
-	var sm := SphereMesh.new()
-	sm.radius = 0.014
-	sm.height = 0.028
-	tip.mesh = sm
-	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.albedo_color = Color(0.8, 0.9, 1.0)
-	m.emission_enabled = true
-	m.emission = Color(0.6, 0.85, 1.0)
-	m.emission_energy_multiplier = 2.2
-	tip.material_override = m
-	tip.position = Vector3(0, 0, -0.05)
-	c.add_child(tip)
-	var rod := MeshInstance3D.new()
-	var cm := CylinderMesh.new()
-	cm.top_radius = 0.004
-	cm.bottom_radius = 0.007
-	cm.height = 0.26
-	rod.mesh = cm
-	rod.material_override = m
-	rod.rotation_degrees = Vector3(-90, 0, 0)
-	rod.position = Vector3(0, 0, 0.08)
-	c.add_child(rod)
-
 func _on_xr_button(button: String, c: XRController3D, pressed: bool) -> void:
+	var is_right := c.tracker == "right_hand"
 	if pressed:
 		match button:
 			"trigger_click":
+				title.skip_intro()
+				if menu.try_tap(c):
+					return
+				if constellation.try_tap(c):
+					return
+				if nest.try_tap(c):
+					return
+				if is_right:
+					var hit := _aim_hit(c)
+					if hit != Vector3.INF:
+						do_ripple(hit, 0.85)
+				else:
+					fireworks.try_manual(_aim_hit(c))
+			"grip_click":
 				var hit := _aim_hit(c)
 				if hit != Vector3.INF:
-					do_ripple(hit, 0.85)
-			"grip_click":
+					gather_point = hit
 				set_gather(true)
 			"ax_button":
-				mood.cycle()
+				if is_right:
+					mood.cycle()
+				else:
+					weather.cycle()
 			"by_button":
-				music.play_finale()
+				if is_right:
+					trigger_finale()
+				else:
+					menu.toggle()
+			"primary_click":
+				trigger_finale()  # thumbstick fallback so the finale is never unreachable
 	else:
 		if button == "grip_click":
 			set_gather(false)
+
+func trigger_finale() -> void:
+	if music.act4_active:
+		return
+	music.play_finale()
+	fireworks.start_show()
+	fishes.ballet()
+
+func _on_finale_done() -> void:
+	fireworks.stop_show(true)
+	title.outro()
 
 func _aim_hit(c: XRController3D) -> Vector3:
 	var from := c.global_position
@@ -333,22 +351,30 @@ func _aim_hit(c: XRController3D) -> Vector3:
 		return Vector3.INF
 	return from + dir * dist
 
-# ------------------------------------------------------------------ public verbs
+# ---------------------------------------------------------------- public verbs
 
 func do_ripple(pos: Vector3, strength: float) -> void:
-	ripples.add(pos, strength)
+	ripples.burst(pos, strength)
+	music.schedule_sfx(func(): audio.plop(pos, strength))
+	fireflies.celebrate()
 	if strength > 0.4:
 		attract_point = pos
 		attract_until = t + 6.0
 		gather_point = pos
 
 func set_gather(on: bool) -> void:
+	if on == gather_on:
+		return
 	gather_on = on
-	beam.visible = true
-	beam.position = Vector3(gather_point.x, 5.0, gather_point.z)
-	flock.set_gather(on, gather_point)
+	gather_held = 0.0
+	finale_fired_this_gather = false
 	if on:
-		do_ripple(gather_point, 0.5)
+		beam.visible = true
+		_place_beam()
+		flock.set_gather(true, gather_point)
+		ripples.add(gather_point, 0.4)
+	else:
+		flock.set_gather(false, gather_point)
 
 func water_height(x: float, z: float) -> float:
 	return sin(x * 0.5 + t * 0.7) * 0.02 + cos(z * 0.4 + t * 0.55) * 0.02
@@ -365,15 +391,16 @@ func _process(delta: float) -> void:
 	ripples.tick(t)
 	var e: float = music.energy
 	water_mat.set_shader_parameter("music_energy", e)
-	firefly_mat.emission_energy_multiplier = 1.4 + e * 3.2
-	fireflies.speed_scale = 0.8 + e * 0.9
-	# beam fade
 	var target_a := 0.16 if gather_on else 0.0
 	beam_alpha = lerpf(beam_alpha, target_a, delta * 3.0)
 	beam_mat.set_shader_parameter("alpha", beam_alpha * (1.0 + e * 0.7))
 	if beam_alpha < 0.005 and not gather_on:
 		beam.visible = false
-	# reticle follows best controller aim
+	if gather_on:
+		gather_held += delta
+		if gather_held > 4.0 and not finale_fired_this_gather and not music.act4_active:
+			finale_fired_this_gather = true
+			trigger_finale()
 	if xr_active:
 		var best := Vector3.INF
 		for c in controllers:
@@ -381,7 +408,7 @@ func _process(delta: float) -> void:
 			if h != Vector3.INF:
 				best = h
 				break
-		if best != Vector3.INF:
+		if best != Vector3.INF and not menu.open:
 			reticle.visible = true
 			reticle.position = Vector3(best.x, water_height(best.x, best.z) + 0.03, best.z)
 			var pulse := 0.30 + 0.12 * sin(t * 4.0)
