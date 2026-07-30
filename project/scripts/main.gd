@@ -225,7 +225,7 @@ func _build_beam() -> void:
 	cm.top_radius = 0.85
 	cm.bottom_radius = 0.60
 	cm.height = 10.0
-	cm.radial_segments = 24
+	cm.radial_segments = 32
 	cm.cap_top = false
 	cm.cap_bottom = false
 	beam.mesh = cm
@@ -247,6 +247,10 @@ func _place_beam() -> void:
 	var z := x.cross(y).normalized()
 	basis.x = x; basis.y = y; basis.z = z
 	beam.transform.basis = basis
+	# the shader needs the volume in world space to compute its soft falloff
+	beam_mat.set_shader_parameter("beam_base", gather_point)
+	beam_mat.set_shader_parameter("beam_axis", md)
+	beam_mat.set_shader_parameter("beam_radius", 0.75)
 
 # ---------------------------------------------------------------- XR / preview
 

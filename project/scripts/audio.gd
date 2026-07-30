@@ -12,6 +12,8 @@ var cur_loop := ""
 func _ready() -> void:
 	for n in ["plop_1","plop_2","plop_3","plop_4","splash","whoosh","crackle","hatch_chord",
 			"chime_1","chime_2","chime_3","chime_4","chime_5","chime_6","chime_7",
+			"harp_1","harp_2","harp_3","harp_4","harp_5","harp_6","harp_7","harp_8",
+			"harp_low_1","harp_low_2","harp_low_3","harp_low_4",
 			"wind_loop","rain_loop"]:
 		streams[n] = load("res://assets/sfx/%s.wav" % n)
 	for i in 10:
@@ -48,6 +50,18 @@ func plop(pos: Vector3, strength := 1.0) -> void:
 			p.pitch_scale = pitch
 			p.play()
 			return
+
+const HARP_DEGREES := 8
+const HARP_LOW_DEGREES := 4
+
+func harp(pos: Vector3, degree: int, vol_db := -9.0) -> void:
+	# Plucked B-minor scale tone, tuned to within a cent (assets_src/make_sfx.py).
+	# Never pitch-shifted at runtime: a shifted pluck detunes against the orchestra,
+	# which is the whole thing this replaced.
+	play3d("harp_%d" % (posmod(degree, HARP_DEGREES) + 1), pos, vol_db)
+
+func harp_low(pos: Vector3, degree: int, vol_db := -15.0) -> void:
+	play3d("harp_low_%d" % (posmod(degree, HARP_LOW_DEGREES) + 1), pos, vol_db)
 
 func play2d(name: String, vol_db := 0.0, pitch := 1.0) -> void:
 	for p in pool2d:

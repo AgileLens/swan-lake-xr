@@ -8,6 +8,14 @@ var jumps: Array[Dictionary] = []
 var ambient_timer := 14.0
 var ballet_queue: Array[float] = []
 var ballet_clock := 0.0
+# Successive leaps walk up the B-minor scale instead of firing one stock sound, so
+# a run of fish reads as a phrase. Alex's v2 note: the old plop+noise-splash
+# "sounded like a video game" against the orchestra.
+var scale_step := 0
+# the finale's five jumps play a fixed rising arpeggio rather than continuing the
+# ambient walk, so the ballet lands as a deliberate phrase every time
+const BALLET_ARPEGGIO := [0, 2, 4, 5, 7]
+var ballet_step := 0
 
 func setup(m) -> void:
 	main = m
@@ -18,20 +26,27 @@ func setup(m) -> void:
 		main.add_child(f)
 		pool.append(f)
 
-func jump(from: Vector3, heading: Vector3, peak := 1.0, dur := 0.95) -> void:
+func jump(from: Vector3, heading: Vector3, peak := 1.0, dur := 0.95, degree := -1) -> void:
 	for f in pool:
 		if not f.visible:
 			f.visible = true
 			var to := from + heading.normalized() * randf_range(1.2, 2.2)
-			jumps.append({"n": f, "a": from, "b": to, "t": 0.0, "dur": dur, "peak": peak})
+			var deg: int = degree
+			if deg < 0:
+				deg = scale_step
+				scale_step += 1
+			jumps.append({"n": f, "a": from, "b": to, "t": 0.0, "dur": dur,
+				"peak": peak, "deg": deg})
 			main.ripples.add(from, 0.09)
-			main.music.schedule_sfx(func(): main.audio.plop(from, 0.7))
+			var launch_pos := from
+			main.music.schedule_sfx(func(): main.audio.harp(launch_pos, deg))
 			return
 
 func ballet() -> void:
 	# five staggered crossing jumps through the gather beam area
 	ballet_queue = [0.0, 0.5, 1.0, 1.5, 2.0]
 	ballet_clock = 0.0
+	ballet_step = 0
 
 func _process(delta: float) -> void:
 	ambient_timer -= delta
@@ -50,8 +65,10 @@ func _process(delta: float) -> void:
 			var gx: float = main.gather_point.x
 			var gz: float = main.gather_point.z
 			var side := 1.0 if randf() > 0.5 else -1.0
+			var deg: int = BALLET_ARPEGGIO[ballet_step % BALLET_ARPEGGIO.size()]
+			ballet_step += 1
 			jump(Vector3(gx - side * 1.6, 0, gz + randf_range(-0.8, 0.8)),
-				Vector3(side, 0, randf_range(-0.3, 0.3)), 1.45, 1.1)
+				Vector3(side, 0, randf_range(-0.3, 0.3)), 1.45, 1.1, deg)
 	var done: Array[Dictionary] = []
 	for j in jumps:
 		j.t += delta
@@ -60,7 +77,10 @@ func _process(delta: float) -> void:
 			var n: Node3D = j.n
 			n.visible = false
 			main.ripples.add(j.b, 0.08)
-			main.music.schedule_sfx(func(): main.audio.play3d("splash", j.b, -16.0))
+			# re-entry answers the leap an octave down, softer
+			var land: Vector3 = j.b
+			var ld: int = j.deg
+			main.music.schedule_sfx(func(): main.audio.harp_low(land, ld))
 			done.append(j)
 			continue
 		var pos: Vector3 = j.a.lerp(j.b, u)

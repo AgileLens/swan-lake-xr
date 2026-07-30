@@ -52,6 +52,87 @@ for i, f in enumerate(freqs):
     x += np.sin(2 * np.pi * f * 2.004 * t) * np.exp(-t * 4.5) * 0.35
     save(f"chime_{i+1}", x)
 
+# --- harp plucks (fish leaps) ---
+# The fish previously used the water plop + a noise splash, which Alex heard in
+# the headset as "a video game" cutting across the orchestra. A plucked string in
+# the score's key reads as part of the music instead of an effect on top of it.
+# Karplus-Strong: excite a delay line of length SR/f, then low-pass its feedback —
+# that decay-brightness-over-time is what makes a pluck sound like a real string
+# rather than a filtered sine.
+def measure_f0(x, sr=SR, lo=80.0, hi=1400.0):
+    """Autocorrelation pitch. A plucked string's 2nd partial is often louder than
+    its fundamental, so an FFT peak reports the octave above and looks like a
+    tuning error that isn't there."""
+    seg = x[int(sr * 0.05) : int(sr * 0.55)]
+    seg = seg - seg.mean()
+    ac = np.correlate(seg, seg, mode="full")[len(seg) - 1 :]
+    lag_lo, lag_hi = int(sr / hi), min(int(sr / lo), len(ac) - 1)
+    lag = lag_lo + int(np.argmax(ac[lag_lo:lag_hi]))
+    # parabolic interpolation around the peak for sub-sample precision
+    if 0 < lag < len(ac) - 1:
+        y0, y1, y2 = ac[lag - 1], ac[lag], ac[lag + 1]
+        denom = 2 * (y0 - 2 * y1 + y2)
+        if denom != 0:
+            lag += -(y2 - y0) / denom
+    return sr / lag
+
+
+def harp_raw(f, dur, damp, bright):
+    n = int(SR * dur)
+    # The loop's 2-tap average adds ~half a sample of delay on top of the line.
+    ln = max(2, int(round(SR / f - 0.5)))
+    # noise burst shaped toward the high end = pick attack; less noise = softer touch
+    buf = rng.normal(0, 1, ln)
+    buf = buf * bright + lowpass(buf, 0.25) * (1.0 - bright)
+    # The loop's averaging filter has unity gain at DC, so any offset in the
+    # excitation survives every pass and accumulates — on the low notes (long
+    # delay line) it grew large enough to bury the fundamental entirely.
+    buf -= buf.mean()
+    buf /= np.max(np.abs(buf)) + 1e-9
+    y = np.zeros(n)
+    # one-pole averaging in the loop; damp sets how fast highs are lost
+    a = 0.5 + 0.5 * (1.0 - damp)
+    prev = 0.0
+    for i in range(n):
+        v = buf[i % ln]
+        y[i] = v
+        filt = a * v + (1.0 - a) * prev
+        prev = filt
+        buf[i % ln] = filt * 0.998  # slight overall loss so it dies out
+    # gentle body resonance + a soft attack so it blooms rather than clicks
+    y = y * np.exp(-np.arange(n) / SR / (dur * 0.45))
+    y[: int(SR * 0.004)] *= np.linspace(0, 1, int(SR * 0.004))
+    y = y + lowpass(y, 0.12) * 0.25
+    # DC-blocking one-pole highpass (~20Hz) — belt and braces after the loop
+    return y - lowpass(y, 2.0 * np.pi * 20.0 / SR)
+
+
+def harp(f, dur=2.4, damp=0.5, bright=0.5):
+    """Karplus-Strong, then resampled onto the exact target pitch.
+
+    The delay line is an integer number of samples, so the achievable pitches are
+    quantized to SR/N — at 587Hz that lands 37 cents flat, which is audibly out of
+    tune against the orchestra. Rather than add a fractional-delay filter, measure
+    what came out and resample to correct it (offline, so cost is irrelevant).
+    """
+    y = harp_raw(f, dur, damp, bright)
+    f_meas = measure_f0(y)
+    ratio = f / f_meas
+    if abs(1200 * np.log2(ratio)) > 1.0:
+        pos = np.arange(0, len(y) - 1, ratio)
+        y = np.interp(pos, np.arange(len(y)), y)
+    return y
+
+
+# B natural minor across two octaves — ascending fish leaps walk up this scale
+harp_notes = [246.94, 293.66, 329.63, 369.99, 440.0, 493.88, 587.33, 659.25]
+for i, f in enumerate(harp_notes):
+    save(f"harp_{i+1}", harp(f, dur=2.2 if f < 400 else 1.8))
+
+# softer, lower voice for the fish re-entering the water (landing)
+for i, f in enumerate([123.47, 146.83, 185.0, 246.94]):
+    save(f"harp_low_{i+1}", harp(f, dur=2.6, damp=0.75, bright=0.28) * 0.7)
+
 # hatch chord = 1+3+5 pentatonic stack
 n = int(SR * 2.2); t = np.arange(n) / SR
 x = np.zeros(n)
