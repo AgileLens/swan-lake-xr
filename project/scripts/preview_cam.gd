@@ -96,6 +96,8 @@ func _shot_pose(p: Vector3, y: float, pt: float) -> void:
 func _run_shots() -> void:
 	get_tree().create_timer(90.0).timeout.connect(func(): print("SHOT_WATCHDOG_QUIT"); get_tree().quit())
 	await get_tree().create_timer(1.0).timeout
+	# after the await: the rig is built inside main._ready(), before perf exists
+	main.perf.enabled = false  # deterministic captures — low desktop fps would shed features
 	main.title.skip_intro()
 	await get_tree().create_timer(2.0).timeout
 	_shot_pose(Vector3(0, 1.75, 0.9), 0.0, -0.06)
@@ -130,6 +132,16 @@ func _run_shots() -> void:
 	_shot_pose(Vector3(0, 1.1, 0.5), 0.0, -0.04)
 	await _settle(0.5)
 	_save_shot("night_planar")
+	# stereo planar: dump both eye reflection buffers so the disparity is checkable
+	main.reflections.apply(3)
+	await _settle(1.2)
+	_save_shot("night_planar_stereo")
+	for eye in 2:
+		var img: Image = main.reflections.viewports[eye].get_texture().get_image()
+		img.save_png("res://../out/shots/refl_eye_%d.png" % eye)
+	print("STEREO_EYES n=", main.reflections.viewports.size(),
+		" L=", main.reflections.refl_cams[0].global_position,
+		" R=", main.reflections.refl_cams[1].global_position)
 	main.reflections.apply(0)
 	main.set_gather(false)
 	main.mood.apply("night", false)
@@ -150,11 +162,6 @@ func _run_shots() -> void:
 	main.menu.toggle()
 	await _settle(0.6)
 	_save_shot("orb_menu")
-	print("MENU_DIAG cam=", cam.global_position, " root=", main.menu.root.position,
-		" orb0=", main.menu.orbs[0].global_position,
-		" orb4=", main.menu.orbs[4].global_position,
-		" vis=", main.menu.orbs[4].visible, " in_tree=", main.menu.orbs[4].is_inside_tree(),
-		" cull=", cam.cull_mask, " layers=", main.menu.orbs[4].layers)
 	print("MENU_ORBS ", main.menu.orbs.size(),
 		" baton=", main.conductor.pose_label(),
 		" timing=", main.music.timing_mode_name(),

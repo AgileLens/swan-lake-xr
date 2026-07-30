@@ -12,9 +12,14 @@ uniform float music_energy = 0.0;
 uniform float wave_amp = 1.0;           // weather boost
 uniform float star_sparkle = 1.0;       // twinkling star glitter on calm water
 uniform float water_metallic = 0.0;     // raised in Probe reflection mode
-uniform int refl_mode = 0;              // 0 analytic, 1 probe, 2 planar
+uniform int refl_mode = 0;              // 0 analytic, 1 probe, 2 planar mono, 3 planar stereo
 uniform sampler2D planar_tex : source_color, hint_default_black;
 uniform mat4 refl_vp;
+// Mode 3 renders a second mirrored camera from the right eye. In mono planar both
+// eyes sample one viewpoint, so reflected objects sit at the wrong disparity and
+// the water reads as a flat pasted image rather than a surface with depth.
+uniform sampler2D planar_tex_r : source_color, hint_default_black;
+uniform mat4 refl_vp_r;
 uniform vec4 u_ripples[28];  // xy world xz, z birth, w strength
 uniform vec4 u_ripples2[28]; // freq, speed, life, sharpness
 
@@ -78,14 +83,17 @@ void fragment() {
 	float hsh = hash21(cell + floor(u_time * vec2(1.7, 1.3)));
 	float spark = step(0.985, hsh) * calm * star_sparkle * (0.5 + 0.5 * sin(u_time * 9.0 + hsh * 40.0));
 	emis += vec3(0.8, 0.9, 1.0) * spark * 0.35 * fres;
-	// planar reflection (experimental mode 2): mono mirrored camera, perturbed by waves
-	if (refl_mode == 2) {
-		vec4 rp = refl_vp * vec4(v_world, 1.0);
+	// planar reflection: mirrored camera(s), UVs perturbed by the wave normal
+	if (refl_mode >= 2) {
+		bool right = (refl_mode == 3 && VIEW_INDEX == VIEW_RIGHT);
+		mat4 vp = right ? refl_vp_r : refl_vp;
+		vec4 rp = vp * vec4(v_world, 1.0);
 		if (rp.w > 0.0) {
 			vec2 ruv = rp.xy / rp.w * 0.5 + 0.5;
 			ruv += vec2(nx, nz) * 0.12;
 			if (ruv.x > 0.0 && ruv.x < 1.0 && ruv.y > 0.0 && ruv.y < 1.0) {
-				vec3 pc = texture(planar_tex, vec2(ruv.x, 1.0 - ruv.y)).rgb;
+				vec2 fuv = vec2(ruv.x, 1.0 - ruv.y);
+				vec3 pc = right ? texture(planar_tex_r, fuv).rgb : texture(planar_tex, fuv).rgb;
 				emis += pc * fres * 0.45;
 			}
 		}

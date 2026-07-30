@@ -10,6 +10,9 @@ var samples: Array[float] = []
 var eval_timer := 3.0
 var tier := 0  # 0 = everything on; each step disables one thing
 var grace := 8.0  # let startup settle
+# Desktop look-dev renders far below 72fps, so the governor would strip the very
+# features a capture is meant to show. Off for --shot; always on in a headset.
+var enabled := true
 
 func setup(m) -> void:
 	main = m
@@ -40,26 +43,25 @@ func _process(delta: float) -> void:
 		avg /= maxf(samples.size(), 1)
 		if hud_on:
 			hud.text = "fps %d | tier %d | refl %s" % [int(avg), tier, main.reflections.mode_name()]
-		if grace <= 0.0 and avg < 71.0:
+		if enabled and grace <= 0.0 and avg < 71.0:
 			_step_down()
 			samples.clear()
 
 func _step_down() -> void:
+	# Reflections can shed more than once (stereo planar → mono planar → probe),
+	# so each call sheds exactly one thing and only advances the tier when the
+	# reflection ladder is exhausted — otherwise one notch would skip a rung.
+	if main.reflections.mode >= 2:
+		main.reflections.apply(main.reflections.mode - 1)
+		return
 	tier += 1
 	match tier:
 		1:
-			if main.reflections.mode == 2:
-				main.reflections.apply(1)
-			else:
-				tier += 1
-			if tier == 2 and main.moon.shadow_enabled:
-				main.moon.shadow_enabled = false
-		2:
 			main.moon.shadow_enabled = false
-		3:
+		2:
 			main.conductor.set_sparkle_level(0)
 			main.fireflies.particles.amount = 80
-		4:
+		3:
 			get_viewport().msaa_3d = Viewport.MSAA_2X
 		_:
 			pass
