@@ -15,6 +15,8 @@ func setup(m) -> void:
 	defs = [
 		{"name": "Swans", "get": func(): return main.flock.style_name(),
 			"cycle": func(): main.flock.cycle_style()},
+		{"name": "Corps", "get": func(): return main.megaflock.level_name(),
+			"cycle": func(): main.megaflock.cycle()},
 		{"name": "Mood", "get": func(): return main.mood.current,
 			"cycle": func(): main.mood.cycle()},
 		{"name": "Weather", "get": func(): return main.weather.current,

@@ -78,6 +78,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 			KEY_B: main.conductor.cycle_pose()
 			KEY_T: main.music.cycle_timing()
 			KEY_M: main.menu.toggle()
+			KEY_X: main.megaflock.cycle()
 			KEY_H: main.perf.set_hud(not main.perf.hud_on)
 			KEY_P: _save_shot("manual_%d" % (Time.get_ticks_msec() % 10000))
 
@@ -176,6 +177,17 @@ func _run_shots() -> void:
 		" timing=", main.music.timing_mode_name(),
 		" grid=", snappedf(main.music.grid_seconds(), 0.001))
 	main.menu.toggle()
+	main.megaflock.set_level(3)
+	main.fireworks.launch(Vector3(-5, 0, -16))
+	main.fireworks.launch(Vector3(5, 0, -19))
+	await _settle(1.9)
+	position = Vector3(0, 2.4, 0.8)
+	yaw = 0.0
+	pitch = -0.10
+	_pose()
+	await _settle(0.4)
+	_save_shot("finale_corps_2000")
+	main.megaflock.set_level(0)
 	print("SHOTS_DONE")
 	get_tree().quit()
 

@@ -36,6 +36,7 @@ var constellation: CygnusPuzzle
 var nest: SwanNest
 var title: TitleCards
 var menu: OrbMenu
+var megaflock: MegaFlock
 var reflections: ReflectionRig
 var perf: PerfGovernor
 var hand_input  # HandInput — untyped: a new class_name isn't in the global class
@@ -64,6 +65,8 @@ func _ready() -> void:
 	flock = SwanFlock.new(); add_child(flock)
 	flock.main = self
 	flock.spawn(8)
+	megaflock = MegaFlock.new(); add_child(megaflock)
+	megaflock.setup(self)
 	music = MusicDirector.new(); add_child(music)
 	music.finale_done.connect(_on_finale_done)
 	conductor = Conductor.new(); add_child(conductor)
@@ -372,10 +375,12 @@ func trigger_finale() -> void:
 	if music.act4_active:
 		return
 	music.play_finale()
+	megaflock.finale_swell()
 	fireworks.start_show()
 	fishes.ballet()
 
 func _on_finale_done() -> void:
+	megaflock.relax()
 	fireworks.stop_show(true)
 	title.outro()
 

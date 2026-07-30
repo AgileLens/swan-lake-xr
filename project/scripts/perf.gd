@@ -62,6 +62,10 @@ func _process(delta: float) -> void:
 			samples.clear()
 
 func _step_down() -> void:
+	# The corps is the single biggest lever — shed it level by level first.
+	if main.megaflock.level > 1:
+		main.megaflock.set_level(main.megaflock.level - 1)
+		return
 	# Reflections can shed more than once (stereo planar → mono planar → probe),
 	# so each call sheds exactly one thing and only advances the tier when the
 	# reflection ladder is exhausted — otherwise one notch would skip a rung.
