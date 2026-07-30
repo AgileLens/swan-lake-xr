@@ -33,6 +33,11 @@ var source := {"left": Src.NONE, "right": Src.NONE}
 var pinch := {"left": 0.0, "right": 0.0}
 var _held := {"left": false, "right": false}
 var _edge := {"left": false, "right": false}
+# Whether the runtime ever hands us a hand tracker is the one thing we can't
+# verify off-device: PICO's AAR declares no hand-tracking permission (Meta's
+# equivalent requires com.oculus.permission.HAND_TRACKING), so tracking may simply
+# never arrive. Log each transition once so a logcat grab settles it.
+var _logged := {"left": "", "right": ""}
 
 func setup(m) -> void:
 	main = m
@@ -133,3 +138,11 @@ func _process(_d: float) -> void:
 	for hand in HANDS:
 		_resolve(hand)
 		_update_pinch(hand)
+		var s: String = source_name(hand)
+		if _logged[hand] != s:
+			_logged[hand] = s
+			var t := hand_tracker(hand)
+			print("[handinput] ", hand, " -> ", s,
+				" (tracker=", "yes" if t else "MISSING",
+				" data=", t.has_tracking_data if t else false,
+				" src=", t.hand_tracking_source if t else -1, ")")

@@ -35,6 +35,16 @@ Built entirely with **Godot 4.7 + the OpenXR Vendors plugin**, 100% procedural a
 | Left Y | Settings orbs (swan style, mood, weather, reflections, shadows, sparkles, baton pose, SFX timing, FPS HUD) |
 | Right stick (menu open) | Fine-tune the baton grip angle — saved between sessions |
 
+Put the controllers down and the piece keeps going on hand tracking alone — the hands and baton follow your real hands, and pinch carries the verbs:
+
+| Bare-hand gesture | Action |
+|---|---|
+| Right pinch | Conduct: ripple + attract the flock |
+| Left pinch | Launch a firework |
+| Both pinch (hold) | Gather the flock into the moonbeam |
+
+Pick a controller back up and it takes over instantly — a tracked controller always wins.
+
 Desktop preview (no headset): mouse-look + `1/2/3` mood, `SPACE` ripple, `G` gather, `F` finale, `K` firework, `W` weather, `R` reflections, `S` swan style, `B` baton pose, `T` SFX timing, `M` orb menu, `C`/`N` easter-egg cheats, `H` FPS HUD, `P` screenshot.
 
 ## Build
@@ -68,8 +78,10 @@ adb install -r out/SwanLake_pico.apk
 Desktop look-dev:
 
 ```bash
-<godot-binary> --path project -- --preview
+<godot-binary> --xr-mode off --path project -- --preview
 ```
+
+`--xr-mode off` matters: with the hand-tracking extensions enabled, OpenXR will happily create a real session on a desktop that has an OpenXR runtime installed, starve the frame loop, and bury the log in *"no viewport was marked with use_xr"*.
 
 ## Things to Try
 
