@@ -5,6 +5,8 @@ extends Node3D
 # OpenXR on desktop, so is_initialized() can't be the fallback signal). --xr overrides.
 
 const LAKE_CENTER := Vector3(0, 0, -10)
+# Shown on the intro card so the running build is identifiable in-headset.
+const BUILD_TAG := "v3 · 2026-07-29"
 
 var t := 0.0
 var xr_active := false
@@ -325,7 +327,8 @@ func _on_xr_button(button: String, c: XRController3D, pressed: bool) -> void:
 				else:
 					menu.toggle()
 			"primary_click":
-				trigger_finale()  # thumbstick fallback so the finale is never unreachable
+				if not menu.open:  # stick doubles as the baton tuner while the menu is up
+					trigger_finale()  # thumbstick fallback so the finale is never unreachable
 	else:
 		if button == "grip_click":
 			set_gather(false)
@@ -380,9 +383,26 @@ func water_height(x: float, z: float) -> float:
 	return sin(x * 0.5 + t * 0.7) * 0.02 + cos(z * 0.4 + t * 0.55) * 0.02
 
 func user_position() -> Vector3:
+	# Floor-level reference (XR origin). NOT eye height — see head_transform().
 	if xr_active and origin:
 		return origin.global_position
-	return Vector3(0, 1.6, 0.6)
+	return Vector3(0, 0.35, 0.6)
+
+func head_transform() -> Transform3D:
+	# Actual eye pose, XR or preview. Anything spawned "in front of the user"
+	# must use this: user_position() is floor-level in XR but was returning eye
+	# height in preview, so head-relative UI landed ~1.6m too high on desktop.
+	if xr_active and origin:
+		for c in origin.get_children():
+			if c is XRCamera3D:
+				return (c as XRCamera3D).global_transform
+		return Transform3D(Basis(), origin.global_position + Vector3(0, 1.35, 0))
+	var pv: Node = get_node_or_null("PreviewRig")
+	if pv:
+		var cam: Node = pv.get_node_or_null("Camera3D")
+		if cam:
+			return (cam as Camera3D).global_transform
+	return Transform3D(Basis(), Vector3(0, 1.6, 0.6))
 
 func _process(delta: float) -> void:
 	t += delta

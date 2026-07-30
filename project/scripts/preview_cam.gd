@@ -2,7 +2,8 @@ class_name PreviewRig
 extends Node3D
 # Desktop look-dev rig. Drag = look, wheel = dolly.
 # Keys: 1/2/3 mood · SPACE ripple burst · G gather · F finale · K firework · W weather
-#       R reflections · C complete Cygnus (cheat) · N hatch (cheat) · H fps HUD · P screenshot
+#       R reflections · S swan style · B baton pose · T SFX timing · M orb menu
+#       C complete Cygnus (cheat) · N hatch (cheat) · H fps HUD · P screenshot
 # --shot: deterministic captures across moods/features, then quit.
 
 var main  # SwanLakeMain (untyped: cyclic)
@@ -74,6 +75,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 				main.nest.glow_egg.visible = true
 				main.nest._hatch()
 			KEY_S: main.flock.cycle_style()
+			KEY_B: main.conductor.cycle_pose()
+			KEY_T: main.music.cycle_timing()
+			KEY_M: main.menu.toggle()
 			KEY_H: main.perf.set_hud(not main.perf.hud_on)
 			KEY_P: _save_shot("manual_%d" % (Time.get_ticks_msec() % 10000))
 
@@ -141,6 +145,21 @@ func _run_shots() -> void:
 		_pose()
 		await _settle(0.4)
 		_save_shot("swanstyle_%d" % i)
+	# settings orbs: the arc layout has to stay readable as options accumulate
+	_shot_pose(Vector3(0, 1.35, 0.6), 0.0, -0.02)
+	main.menu.toggle()
+	await _settle(0.6)
+	_save_shot("orb_menu")
+	print("MENU_DIAG cam=", cam.global_position, " root=", main.menu.root.position,
+		" orb0=", main.menu.orbs[0].global_position,
+		" orb4=", main.menu.orbs[4].global_position,
+		" vis=", main.menu.orbs[4].visible, " in_tree=", main.menu.orbs[4].is_inside_tree(),
+		" cull=", cam.cull_mask, " layers=", main.menu.orbs[4].layers)
+	print("MENU_ORBS ", main.menu.orbs.size(),
+		" baton=", main.conductor.pose_label(),
+		" timing=", main.music.timing_mode_name(),
+		" grid=", snappedf(main.music.grid_seconds(), 0.001))
+	main.menu.toggle()
 	print("SHOTS_DONE")
 	get_tree().quit()
 

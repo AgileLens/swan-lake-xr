@@ -60,6 +60,7 @@ func _intro() -> void:
 	var b := _label("p r e s e n t s", 20, Vector3(0, 0.28, 0), intro_root)
 	var c := _label("S W A N   L A K E", 84, Vector3(0, -0.18, 0), intro_root)
 	var d := _label("a  P I C O   S w a n  e x p e r i e n c e", 18, Vector3(0, -0.52, 0), intro_root)
+	var v := _label(main.BUILD_TAG, 11, Vector3(0, -0.72, 0), intro_root)
 	# orbit motif: thin ring + orbiting dot above the wordmark
 	orbit_ring = MeshInstance3D.new()
 	var tm := TorusMesh.new()
@@ -96,6 +97,7 @@ func _intro() -> void:
 	tw.tween_property(fade_mat, "albedo_color:a", 0.0, 2.4)
 	tw.parallel().tween_property(c, "modulate:a", 1.0, 1.6)
 	tw.parallel().tween_property(d, "modulate:a", 0.7, 1.6)
+	tw.parallel().tween_property(v, "modulate:a", 0.35, 1.6)
 	tw.tween_interval(2.8)
 	tw.tween_callback(_dissolve_intro)
 

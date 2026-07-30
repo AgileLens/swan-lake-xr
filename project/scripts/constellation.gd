@@ -44,7 +44,7 @@ func setup(m) -> void:
 func aimed_star(c: XRController3D) -> int:
 	if done:
 		return -1
-	var head: Vector3 = main.user_position() + Vector3(0, 1.5, 0)
+	var head: Vector3 = main.head_transform().origin
 	var dir := -c.global_transform.basis.z
 	for i in stars.size():
 		if lit[i]:

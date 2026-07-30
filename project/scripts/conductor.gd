@@ -15,6 +15,22 @@ var _speed_avg := 0.0
 var pinch := 0.0
 var sparkle_level := 1  # 0 low 1 med 2 high (menu)
 
+# Grip pose: how the hand+baton sits on the controller, relative to the aim pose.
+# The right feel is a headset-only judgment call, so ship presets on an orb plus a
+# live fine-tune (right stick, menu open) instead of one hardcoded guess.
+const POSE_PRESETS := [
+	{"name": "aim", "pitch": 0.0},
+	{"name": "lifted", "pitch": -20.0},
+	{"name": "relaxed", "pitch": -35.0},
+	{"name": "natural", "pitch": -50.0},
+	{"name": "downbeat", "pitch": -65.0},
+]
+const POSE_CFG := "user://baton_pose.cfg"
+var pose_index := 2  # "relaxed" -35 = v2 shipped guess
+var pose_fine := 0.0  # stick-dialed degrees on top of the preset
+var hand_instances: Array[Node3D] = []
+var _fine_dirty := false
+
 func setup(m) -> void:
 	main = m
 	var hands: PackedScene = load("res://assets/hands.glb")
@@ -29,9 +45,11 @@ func setup(m) -> void:
 			if hl: hl.visible = false
 			right_hand_node = inst
 			if hr: hr.position = Vector3.ZERO
-		inst.rotation_degrees = Vector3(-35, 0, 0)  # relax wrist vs aim pose; tune on device
 		inst.position = Vector3(0, -0.01, 0.02)
 		c.add_child(inst)
+		hand_instances.append(inst)
+	_load_pose()
+	_apply_pose()
 	# sparkle trail (world-space so it trails behind motion)
 	sparkles = GPUParticles3D.new()
 	sparkles.amount = 130
@@ -95,9 +113,59 @@ func set_sparkle_level(lv: int) -> void:
 	sparkle_level = lv
 	sparkles.amount = [50, 130, 240][clampi(lv, 0, 2)]
 
+# ---------------------------------------------------------------- baton pose
+
+func effective_pitch() -> float:
+	var base: float = POSE_PRESETS[pose_index].pitch
+	return clampf(base + pose_fine, -90.0, 15.0)
+
+func pose_label() -> String:
+	return "%s %d°" % [POSE_PRESETS[pose_index].name, roundi(effective_pitch())]
+
+func cycle_pose() -> void:
+	pose_index = (pose_index + 1) % POSE_PRESETS.size()
+	pose_fine = 0.0
+	_apply_pose()
+	_save_pose()
+
+func _apply_pose() -> void:
+	for inst in hand_instances:
+		inst.rotation_degrees = Vector3(effective_pitch(), 0, 0)
+
+func _load_pose() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(POSE_CFG) == OK:
+		pose_index = clampi(cfg.get_value("baton", "preset", pose_index), 0, POSE_PRESETS.size() - 1)
+		pose_fine = clampf(cfg.get_value("baton", "fine", 0.0), -45.0, 45.0)
+
+func _save_pose() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("baton", "preset", pose_index)
+	cfg.set_value("baton", "fine", pose_fine)
+	cfg.save(POSE_CFG)
+	# lands in logcat: the number to hardcode once Alex settles on a feel
+	print("[baton] pose=", pose_label(), " (preset=", POSE_PRESETS[pose_index].name,
+		" fine=", snappedf(pose_fine, 0.1), ")")
+
+func _tune_pose(delta: float) -> void:
+	# right stick Y while the orb menu is open: dial pitch live, save on release
+	var c := _right()
+	if c == null:
+		return
+	var stick: Vector2 = c.get_vector2("primary")
+	if absf(stick.y) > 0.3:
+		pose_fine = clampf(pose_fine + stick.y * 30.0 * delta, -45.0, 45.0)
+		_apply_pose()
+		_fine_dirty = true
+	elif _fine_dirty:
+		_fine_dirty = false
+		_save_pose()
+
 func _process(delta: float) -> void:
 	if main.controllers.is_empty():
 		return
+	if main.menu and main.menu.open:
+		_tune_pose(delta)
 	var tip := tip_position()
 	var speed := (tip - _prev_tip).length() / maxf(delta, 0.001)
 	_prev_tip = tip
