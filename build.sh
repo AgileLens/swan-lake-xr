@@ -23,6 +23,12 @@ if [ ! -f "$ROOT/project/android/build/build.gradle" ]; then
 fi
 
 mkdir -p "$ROOT/out"
+
+# Assets here are code-generated (assets_src/*.py, Blender scripts). A fresh .wav/.glb
+# has no .import sibling, and the export happily ships it — then load() fails at
+# runtime with "No loader found for resource (expected type: unknown)". Import first.
+"$GODOT" --headless --path "$ROOT/project" --import >/dev/null 2>&1 || true
+
 GRADLE_OPTS="-Djava.net.preferIPv4Stack=true" "$GODOT" --headless --path "$ROOT/project" \
   --export-debug "$PRESET" "../out/SwanLake_${PRESET}.apk"
 ls -la "$ROOT/out/SwanLake_${PRESET}.apk"

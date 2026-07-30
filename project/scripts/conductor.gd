@@ -29,25 +29,36 @@ const POSE_CFG := "user://baton_pose.cfg"
 var pose_index := 2  # "relaxed" -35 = v2 shipped guess
 var pose_fine := 0.0  # stick-dialed degrees on top of the preset
 var hand_instances: Array[Node3D] = []
+var anchors := {}  # hand -> Node3D, positioned from HandInput each frame
 var _fine_dirty := false
 
 func setup(m) -> void:
 	main = m
 	var hands: PackedScene = load("res://assets/hands.glb")
-	for c in main.controllers:
+	# Anchored in world space and driven from HandInput each frame rather than
+	# parented to the controller, so the same rig serves controllers and bare
+	# hands. Each anchor hides itself when its hand isn't tracked — the same
+	# "each side independently hides itself" resolution Tank Commander landed on,
+	# which avoids a third arbitration mechanism that can disagree with the other two.
+	for hand in main.HANDS:
+		var anchor := Node3D.new()
+		anchor.name = "HandAnchor_%s" % hand
+		anchor.visible = false
+		main.add_child(anchor)
 		var inst: Node3D = hands.instantiate()
 		var hl: Node3D = inst.find_child("HandL", true, false)
 		var hr: Node3D = inst.find_child("HandR", true, false)
-		if c.tracker == "left_hand":
+		if hand == "left":
 			if hr: hr.visible = false
-			left_hand_node = inst
 		else:
 			if hl: hl.visible = false
-			right_hand_node = inst
 			if hr: hr.position = Vector3.ZERO
 		inst.position = Vector3(0, -0.01, 0.02)
-		c.add_child(inst)
+		anchor.add_child(inst)
+		anchors[hand] = anchor
 		hand_instances.append(inst)
+	left_hand_node = anchors["left"]
+	right_hand_node = anchors["right"]
 	_load_pose()
 	_apply_pose()
 	# sparkle trail (world-space so it trails behind motion)
@@ -98,16 +109,14 @@ func setup(m) -> void:
 	main.add_child(tip_light)
 
 func tip_position() -> Vector3:
-	var c := _right()
-	if c:
-		return c.global_position + (-c.global_transform.basis.z) * 0.30
+	# baton tip = the arbitrated right-hand pose, so the sparkle trail, the tip
+	# light and the aim ray all track the same thing in either input mode
+	if main.hand_input and main.hand_input.active("right"):
+		var t: Transform3D = main.hand_input.pose("right")
+		# a bare finger has no baton in it — shorten the reach to the fingertip
+		var reach: float = 0.30 if not main.hand_input.bare("right") else 0.05
+		return t.origin + (-t.basis.z) * reach
 	return Vector3.ZERO
-
-func _right() -> XRController3D:
-	for c in main.controllers:
-		if c.tracker == "right_hand":
-			return c
-	return null
 
 func set_sparkle_level(lv: int) -> void:
 	sparkle_level = lv
@@ -129,8 +138,15 @@ func cycle_pose() -> void:
 	_save_pose()
 
 func _apply_pose() -> void:
-	for inst in hand_instances:
-		inst.rotation_degrees = Vector3(effective_pitch(), 0, 0)
+	# The grip offset describes how a hand sits on a *controller*; a tracked bare
+	# hand already is the real pose, so it gets no offset.
+	for hand in main.HANDS:
+		var anchor: Node3D = anchors.get(hand)
+		if anchor == null or anchor.get_child_count() == 0:
+			continue
+		var bare: bool = main.hand_input != null and main.hand_input.bare(hand)
+		var inst: Node3D = anchor.get_child(0)
+		inst.rotation_degrees = Vector3(0.0 if bare else effective_pitch(), 0, 0)
 
 func _load_pose() -> void:
 	var cfg := ConfigFile.new()
@@ -149,8 +165,9 @@ func _save_pose() -> void:
 
 func _tune_pose(delta: float) -> void:
 	# right stick Y while the orb menu is open: dial pitch live, save on release
-	var c := _right()
-	if c == null:
+	# (controller-only — there is no stick to push in bare-hand mode)
+	var c: XRController3D = main.hand_input.controller("right")
+	if c == null or main.hand_input.bare("right"):
 		return
 	var stick: Vector2 = c.get_vector2("primary")
 	if absf(stick.y) > 0.3:
@@ -161,8 +178,22 @@ func _tune_pose(delta: float) -> void:
 		_fine_dirty = false
 		_save_pose()
 
+func _track_hands() -> void:
+	for hand in main.HANDS:
+		var anchor: Node3D = anchors[hand]
+		var live: bool = main.hand_input.active(hand)
+		anchor.visible = live
+		if live:
+			anchor.global_transform = main.hand_input.pose(hand)
+
 func _process(delta: float) -> void:
-	if main.controllers.is_empty():
+	if not main.xr_active or main.hand_input == null:
+		return
+	_track_hands()
+	_apply_pose()  # source can flip mid-session; the offset must follow it
+	if not main.hand_input.active("right"):
+		sparkles.emitting = false
+		tip_light.light_energy = 0.0
 		return
 	if main.menu and main.menu.open:
 		_tune_pose(delta)
@@ -170,7 +201,7 @@ func _process(delta: float) -> void:
 	var speed := (tip - _prev_tip).length() / maxf(delta, 0.001)
 	_prev_tip = tip
 	_speed_avg = lerpf(_speed_avg, clampf(speed, 0.0, 5.0), clampf(delta * 6.0, 0, 1))
-	_update_pinch()
+	pinch = main.hand_input.pinch["right"]
 	conduct_energy = clampf(_speed_avg / 3.2 + pinch * 0.45, 0.0, 1.0)
 	sparkles.global_position = tip
 	sparkles.emitting = _speed_avg > 1.05 or pinch > 0.5
@@ -182,12 +213,5 @@ func set_accent(c: Color) -> void:
 	sparkle_mat.emission = c
 	tip_light.light_color = c.lerp(Color.WHITE, 0.4)
 
-func _update_pinch() -> void:
-	# best-effort OpenXR hand tracking: pinch strength from thumb-index distance
-	pinch = 0.0
-	var tracker: XRHandTracker = XRServer.get_tracker("/user/hand_tracker/right") as XRHandTracker
-	if tracker and tracker.has_tracking_data:
-		var thumb := tracker.get_hand_joint_transform(XRHandTracker.HAND_JOINT_THUMB_TIP)
-		var index := tracker.get_hand_joint_transform(XRHandTracker.HAND_JOINT_INDEX_FINGER_TIP)
-		var d := (thumb.origin - index.origin).length()
-		pinch = clampf(remap(d, 0.075, 0.02, 0.0, 1.0), 0.0, 1.0)
+# pinch now comes from HandInput (single owner, with hysteresis) rather than a
+# second thumb-index measurement that could drift out of agreement with it

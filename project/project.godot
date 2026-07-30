@@ -29,4 +29,13 @@ openxr/render_target_size_multiplier=1.35
 openxr/enabled=true
 openxr/foveation_level=2
 openxr/foveation_dynamic=true
+openxr/extensions/hand_tracking=true
+; Only the UNOBSTRUCTED source. The controller data source makes the runtime
+; synthesize hand poses FROM the controllers, so the hand tracker reports
+; has_tracking_data while you're holding controllers and shadows the real
+; controller input — the bug that survived four rounds on Tank Commander VR.
+; Leaving it off means "hand tracker has data" cleanly implies "bare hands".
+openxr/extensions/hand_tracking_unobstructed_data_source=true
+openxr/extensions/hand_tracking_controller_data_source=false
+openxr/extensions/hand_interaction_profile=true
 shaders/enabled=true

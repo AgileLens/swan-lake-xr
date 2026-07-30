@@ -42,7 +42,9 @@ func _process(delta: float) -> void:
 			avg += s
 		avg /= maxf(samples.size(), 1)
 		if hud_on:
-			hud.text = "fps %d | tier %d | refl %s" % [int(avg), tier, main.reflections.mode_name()]
+			hud.text = "fps %d | tier %d | refl %s | in L:%s R:%s" % [
+				int(avg), tier, main.reflections.mode_name(),
+				main.hand_input.source_name("left"), main.hand_input.source_name("right")]
 		if enabled and grace <= 0.0 and avg < 71.0:
 			_step_down()
 			samples.clear()

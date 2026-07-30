@@ -10,7 +10,8 @@ Built entirely with **Godot 4.7 + the OpenXR Vendors plugin**, 100% procedural a
 
 ## Experience
 
-- **Conduct.** Right trigger ripples the water where you point — the flock banks toward it. Ripple sounds are pitched to B minor and quantized to the music's pulse.
+- **Conduct.** Right trigger ripples the water where you point — the flock banks toward it. Ripple sounds are pitched to B minor and quantized to the music's pulse. The baton's grip angle is tunable in the headset — five presets, plus the right stick to dial it live.
+- **Fish sing.** Leaping fish play plucked harp notes in B natural minor, walking up the scale as they go, answered an octave down when they re-enter the water. Every note is tuned to within half a cent of the score's key.
 - **Gather.** Hold grip: the swans assemble in a moonbeam (angled from the actual moon), face you, and bow. Hold long enough and the Act 4 finale takes over.
 - **Finale.** Act 4 swells, fireworks bloom over the lake in mood-matched palettes, fish leap in choreography, and the night closes with a title card.
 - **Moods.** Night / Dusk / Dawn — three complete palettes (sky, water, fog, fireflies, firework colors), tweened live.
@@ -18,7 +19,7 @@ Built entirely with **Godot 4.7 + the OpenXR Vendors plugin**, 100% procedural a
 - **Swan styles.** Four model tiers from flat-shaded origami to layered-feather detailed, hot-swappable at runtime.
 - **Synesthesia.** Fireflies shift color and pattern with your conducting energy and the orchestra's dynamics; a Fantasia-style sparkle trail follows your baton. With hand tracking, pinch modulates the response.
 - **Easter eggs.** Find and light the seven stars of **Cygnus, the Swan** (each is a chime note in key). Complete the constellation and watch what happens at the nest.
-- **Reflections.** Three water-reflection techniques (analytic / probe / planar mirror camera) behind a live toggle.
+- **Reflections.** Four water-reflection techniques (analytic / probe / planar / planar stereo) behind a live toggle. Stereo renders a mirrored camera per eye, so reflections sit at the right depth instead of being pasted flat across both.
 - **Performance governor.** Watches frame rate and sheds effects one notch at a time to hold the target.
 
 ## Controls
@@ -31,13 +32,24 @@ Built entirely with **Godot 4.7 + the OpenXR Vendors plugin**, 100% procedural a
 | Right A | Cycle mood (Night / Dusk / Dawn) |
 | Right B | Trigger the Act 4 finale |
 | Left X | Cycle weather |
-| Left Y | Settings orbs (swan style, reflections, shadows, sparkles, FPS HUD) |
+| Left Y | Settings orbs (swan style, mood, weather, reflections, shadows, sparkles, baton pose, SFX timing, FPS HUD) |
+| Right stick (menu open) | Fine-tune the baton grip angle — saved between sessions |
 
-Desktop preview (no headset): mouse-look + `1/2/3` mood, `SPACE` ripple, `G` gather, `F` finale, `K` firework, `W` weather, `R` reflections, `S` swan style, `C`/`N` easter-egg cheats, `H` FPS HUD, `P` screenshot.
+Desktop preview (no headset): mouse-look + `1/2/3` mood, `SPACE` ripple, `G` gather, `F` finale, `K` firework, `W` weather, `R` reflections, `S` swan style, `B` baton pose, `T` SFX timing, `M` orb menu, `C`/`N` easter-egg cheats, `H` FPS HUD, `P` screenshot.
 
 ## Build
 
 Requirements: Godot 4.7.1 + export templates, the godot_openxr_vendors 5.1.0 addon (bundled in `project/addons/`), Android SDK (build-tools 35+), JDK 17. Blender 4/5 and Python 3 + numpy regenerate the assets from `assets_src/` — every model and sound is code.
+
+```bash
+python3 assets_src/make_sfx.py    # re-synthesize the SFX kit (harp, chimes, plops, loops)
+```
+
+```bash
+python3 tools/measure_tempo.py project/assets/music/*.ogg    # tempo + beat-grid phase per track
+```
+
+`measure_tempo.py` reports *ranked* tempo candidates rather than one number: a rubato orchestral recording genuinely supports more than one reading, and the Act II Scène's tempo octave is ambiguous even to two different scoring metrics. Pick the family that matches the score and put it in `music.gd`'s `TRACKS`.
 
 ```bash
 ./build.sh pico    # → out/SwanLake_pico.apk   (PICO OpenXR loader)
@@ -65,7 +77,8 @@ Desktop look-dev:
 2. **Hold grip until the music changes.** The gather-bow held long enough triggers the finale — fireworks included.
 3. **Look up and trace the Swan.** Seven stars pulse faintly overhead. Light all of Cygnus and follow the shooting star to the nest.
 4. **Open the orbs (left Y) and flip swan styles.** Origami → low-poly → organic → detailed, live, mid-glide.
-5. **Set weather to rain, reflections to planar.** Rain rings on mirror-water at dusk is the screenshot you'll send someone.
+5. **Set weather to rain, reflections to planar stereo.** Rain rings on mirror-water at dusk is the screenshot you'll send someone — and in stereo the reflections sit at the right depth.
+6. **Dial in the baton.** Open the orbs, aim at *Baton*, and push the right stick up or down until the wand sits in your hand the way you'd actually hold one. It remembers.
 
 ## Screenshots
 

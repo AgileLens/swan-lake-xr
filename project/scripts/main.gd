@@ -5,8 +5,9 @@ extends Node3D
 # OpenXR on desktop, so is_initialized() can't be the fallback signal). --xr overrides.
 
 const LAKE_CENTER := Vector3(0, 0, -10)
+const HANDS := ["left", "right"]
 # Shown on the intro card so the running build is identifiable in-headset.
-const BUILD_TAG := "v3 · 2026-07-29"
+const BUILD_TAG := "v3 · 2026-07-30"
 
 var t := 0.0
 var xr_active := false
@@ -37,6 +38,8 @@ var title: TitleCards
 var menu: OrbMenu
 var reflections: ReflectionRig
 var perf: PerfGovernor
+var hand_input  # HandInput — untyped: a new class_name isn't in the global class
+                # cache until an editor pass, so don't depend on it resolving
 
 var gather_on := false
 var gather_point := Vector3(0, 0, -6.5)
@@ -53,6 +56,8 @@ func _ready() -> void:
 	_build_shore()
 	_build_beam()
 	_init_xr_or_preview()
+	hand_input = load("res://scripts/hand_input.gd").new(); add_child(hand_input)
+	hand_input.setup(self)
 	audio = SfxPool.new(); add_child(audio)
 	ripples = RippleField.new(); add_child(ripples)
 	ripples.water_mat = water_mat
@@ -337,6 +342,32 @@ func _on_xr_button(button: String, c: XRController3D, pressed: bool) -> void:
 		if button == "grip_click":
 			set_gather(false)
 
+# With no controllers in hand there are no buttons, so pinch carries the verbs:
+# right pinch = conduct (the trigger), left pinch = firework, both = gather.
+# Without this, putting the controllers down left the piece completely inert.
+func _bare_hand_gestures() -> void:
+	var lb: bool = hand_input.bare("left")
+	var rb: bool = hand_input.bare("right")
+	if not (lb or rb):
+		return
+	var both: bool = lb and rb and hand_input.pinch_pressed("left") \
+		and hand_input.pinch_pressed("right")
+	if both != gather_on:
+		if both:
+			var g: Vector3 = _aim_hit_pose(hand_input.pose("right"))
+			if g != Vector3.INF:
+				gather_point = g
+		set_gather(both)
+	if both:
+		return
+	if rb and hand_input.pinch_just_pressed("right"):
+		title.skip_intro()
+		var hit: Vector3 = _aim_hit_pose(hand_input.pose("right"))
+		if hit != Vector3.INF:
+			do_ripple(hit, 0.85)
+	if lb and hand_input.pinch_just_pressed("left"):
+		fireworks.try_manual(_aim_hit_pose(hand_input.pose("left")))
+
 func trigger_finale() -> void:
 	if music.act4_active:
 		return
@@ -349,9 +380,18 @@ func _on_finale_done() -> void:
 	title.outro()
 
 func _aim_hit(c: XRController3D) -> Vector3:
-	var from := c.global_position
-	var dir := -c.global_transform.basis.z
-	if dir.y > -0.02:
+	return _aim_hit_pose(hand_input.pose(hand_of(c)))
+
+func hand_of(c: XRController3D) -> String:
+	return "right" if c.tracker == "right_hand" else "left"
+
+# Single water-plane intersection used by every consumer — ripples, fireworks,
+# gather point, reticle. Everything reads the arbitrated pose, so a bare hand and
+# a held controller can never point somewhere different from what's drawn.
+func _aim_hit_pose(t: Transform3D) -> Vector3:
+	var from := t.origin
+	var dir := -t.basis.z
+	if dir.length() < 0.5 or dir.y > -0.02:
 		return Vector3.INF
 	var dist := from.y / -dir.y
 	if dist > 60.0:
@@ -426,9 +466,12 @@ func _process(delta: float) -> void:
 			finale_fired_this_gather = true
 			trigger_finale()
 	if xr_active:
+		_bare_hand_gestures()
 		var best := Vector3.INF
-		for c in controllers:
-			var h := _aim_hit(c)
+		for hand in HANDS:
+			if not hand_input.active(hand):
+				continue
+			var h: Vector3 = _aim_hit_pose(hand_input.pose(hand))
 			if h != Vector3.INF:
 				best = h
 				break
