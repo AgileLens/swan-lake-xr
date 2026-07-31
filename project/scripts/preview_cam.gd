@@ -202,14 +202,18 @@ func _run_shots() -> void:
 		yaw = atan2(position.x - sp0.x, position.z - sp0.z)
 		_pose()
 		await _save_shot("dancer_%d" % k)
-	# beak check: force it open explicitly rather than trust a fly-by chance catch
+	# beak check: force it open explicitly rather than trust a fly-by chance catch.
+	# Aim at the HEAD position, not body centre — the beak sits atop an extended
+	# neck (~0.4-0.5 units up), and a body-centre-relative offset put the camera
+	# inside the neck geometry (dancer_0's earlier bug, same root cause).
 	var sB: Node3D = main.flock.swans[1]
 	if sB.beak:
 		sB._beak_open = 1.0
-	var spB: Vector3 = sB.global_position
-	position = spB + Vector3(0.55, 0.42, 0.75)
-	yaw = atan2(position.x - spB.x, position.z - spB.z)
-	pitch = -0.15
+	await _settle(0.1)  # let the rotation actually apply before framing off it
+	var headB: Vector3 = sB.beak.global_position if sB.beak else sB.global_position + Vector3(0, 0.4, 0)
+	position = headB + Vector3(0.75, 0.15, 0.85)
+	yaw = atan2(position.x - headB.x, position.z - headB.z)
+	pitch = -0.05
 	_pose()
 	await _save_shot("beak_open")
 	print("BEAK rest=", sB.beak_rest_rot, " open_rot=", sB.beak.rotation if sB.beak else "NO BEAK NODE")
