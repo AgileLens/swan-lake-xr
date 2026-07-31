@@ -105,7 +105,10 @@ func _build_environment() -> void:
 	sky_mat = ShaderMaterial.new()
 	sky_mat.shader = load("res://shaders/sky.gdshader")
 	sky.sky_material = sky_mat
-	sky.radiance_size = Sky.RADIANCE_SIZE_64
+	# 64 was fine for a plain gradient, but with clouds and aurora the low-res
+	# radiance cubemap's face boundaries showed as a hard vertical seam in the sky.
+	sky.radiance_size = Sky.RADIANCE_SIZE_256
+	sky.process_mode = Sky.PROCESS_MODE_REALTIME
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
@@ -457,6 +460,7 @@ func _process(delta: float) -> void:
 	t += delta
 	water_mat.set_shader_parameter("u_time", t)
 	sky_mat.set_shader_parameter("u_time", t)
+	sky_mat.set_shader_parameter("music_energy", music.energy)
 	ripples.tick(t)
 	var e: float = music.energy
 	water_mat.set_shader_parameter("music_energy", e)

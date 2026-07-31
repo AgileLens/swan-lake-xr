@@ -9,6 +9,11 @@ var current := "night"
 
 var presets := {
 	"night": {
+		"cloud_cover": 0.42,
+		"cloud_tint": Color(0.34, 0.42, 0.60),
+		"aurora": 0.55,
+		"aurora_a": Color(0.16, 0.92, 0.60),
+		"aurora_b": Color(0.45, 0.35, 0.95),
 		"sky_top": Color(0.010, 0.015, 0.045),
 		"sky_horizon": Color(0.050, 0.080, 0.160),
 		"stars": 1.0,
@@ -27,6 +32,11 @@ var presets := {
 		"fireworks": [Color(0.65, 0.85, 1.0), Color(0.95, 0.97, 1.0), Color(0.75, 0.6, 1.0)],
 	},
 	"dusk": {
+		"cloud_cover": 0.58,
+		"cloud_tint": Color(0.62, 0.42, 0.48),
+		"aurora": 0.0,
+		"aurora_a": Color(0.60, 0.40, 0.80),
+		"aurora_b": Color(0.90, 0.50, 0.55),
 		"sky_top": Color(0.055, 0.030, 0.100),
 		"sky_horizon": Color(0.480, 0.190, 0.150),
 		"stars": 0.35,
@@ -45,6 +55,11 @@ var presets := {
 		"fireworks": [Color(1.0, 0.78, 0.35), Color(1.0, 0.5, 0.45), Color(0.95, 0.5, 0.9)],
 	},
 	"dawn": {
+		"cloud_cover": 0.50,
+		"cloud_tint": Color(0.78, 0.68, 0.66),
+		"aurora": 0.0,
+		"aurora_a": Color(0.50, 0.80, 0.90),
+		"aurora_b": Color(0.95, 0.75, 0.60),
 		"sky_top": Color(0.140, 0.200, 0.360),
 		"sky_horizon": Color(0.780, 0.580, 0.480),
 		"stars": 0.0,
@@ -80,6 +95,11 @@ func apply(name: String, instant: bool) -> void:
 	_sh(main.sky_mat, "star_intensity", p.stars, dur)
 	_sh(main.sky_mat, "milkyway_intensity", p.milkyway, dur)
 	_sh(main.sky_mat, "moon_color", p.moon_color, dur)
+	_sh(main.sky_mat, "cloud_cover", p.cloud_cover, dur)
+	_sh(main.sky_mat, "cloud_tint", p.cloud_tint, dur)
+	_sh(main.sky_mat, "aurora_intensity", p.aurora, dur)
+	_sh(main.sky_mat, "aurora_a", p.aurora_a, dur)
+	_sh(main.sky_mat, "aurora_b", p.aurora_b, dur)
 	_sh(main.water_mat, "base_color", p.water_base, dur)
 	_sh(main.water_mat, "horizon_color", p.water_horizon, dur)
 	_sh(main.water_mat, "glint_color", p.glint, dur)
