@@ -29,6 +29,15 @@ openxr/render_target_size_multiplier=1.35
 openxr/enabled=true
 openxr/foveation_level=2
 openxr/foveation_dynamic=true
+; Fort (sibling project, same vendors plugin) traced their face/eye tracking
+; dead end to two separate causes: an unrelated extension left off by default,
+; AND permissions that were declared in the manifest but never actually
+; requested at runtime — no in-VR consent dialog ever fired, so the OS-level
+; grant state was inconsistent across devices (confirmed: some of tonight's
+; units had HAND_TRACKING pre-granted, one needed it explicitly pm-granted).
+; This flag makes the runtime properly request needed permissions instead of
+; depending on ambient grant state.
+openxr/extensions/automatically_request_runtime_permissions=true
 openxr/extensions/hand_tracking=true
 ; Only the UNOBSTRUCTED source. The controller data source makes the runtime
 ; synthesize hand poses FROM the controllers, so the hand tracker reports
