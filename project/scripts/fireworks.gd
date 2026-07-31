@@ -54,6 +54,10 @@ func setup(m) -> void:
 		m2.albedo_texture = grad
 		m2.emission_enabled = true
 		m2.emission_energy_multiplier = 5.5
+		# same soft-particle depth fade as the fireflies — a spark drifting behind
+		# a swan or the dock blends out instead of z-fighting as a hard sprite edge
+		m2.proximity_fade_enabled = true
+		m2.proximity_fade_distance = 0.5
 		quad.material = m2
 		p.draw_pass_1 = quad
 		main.add_child(p)

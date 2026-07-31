@@ -10,11 +10,18 @@ var attractor: GPUParticlesAttractorSphere3D
 var base_color := Color(0.55, 0.85, 1.0)
 var accent_color := Color(1.0, 0.75, 0.9)
 var _celebrate := 0.0
+# Was 130 — the research brief on mobile-XR GPU headroom flagged this as the
+# single best wow-per-hour lever: thousands of small additively-blended sprites
+# are genuinely GPU-costly on tile hardware (overdraw, not triangle count), and
+# it's the most headset-legible "this headset is doing something special"
+# moment for a night scene. Perf-governable: the last tier the governor sheds.
+const AMOUNT_TIERS := [130, 600, 1500, 2500]
+var amount_tier := 3
 
 func setup(m) -> void:
 	main = m
 	particles = GPUParticles3D.new()
-	particles.amount = 130
+	particles.amount = AMOUNT_TIERS[amount_tier]
 	particles.lifetime = 7.0
 	particles.preprocess = 4.0
 	pmat = ParticleProcessMaterial.new()
@@ -47,6 +54,12 @@ func setup(m) -> void:
 	draw_mat.emission_enabled = true
 	draw_mat.emission = base_color
 	draw_mat.emission_energy_multiplier = 1.6
+	# Soft-particle fade: StandardMaterial3D's built-in proximity_fade samples the
+	# depth texture and fades a particle out as it nears solid geometry, so a
+	# firefly drifting into a swan or the dock blends instead of z-fighting as a
+	# hard-edged sprite. No custom shader needed — Mobile renderer supports this.
+	draw_mat.proximity_fade_enabled = true
+	draw_mat.proximity_fade_distance = 0.35
 	quad.material = draw_mat
 	particles.draw_pass_1 = quad
 	particles.position = Vector3(0, 1.0, -6)
@@ -63,6 +76,15 @@ func set_mood_colors(base: Color, accent: Color) -> void:
 
 func celebrate() -> void:
 	_celebrate = 3.0
+
+func step_down_amount() -> bool:
+	# Called by the perf governor. Returns false once already at the floor, so
+	# the governor knows to move on to the next thing to shed.
+	if amount_tier <= 0:
+		return false
+	amount_tier -= 1
+	particles.amount = AMOUNT_TIERS[amount_tier]
+	return true
 
 func _process(delta: float) -> void:
 	_celebrate = maxf(_celebrate - delta, 0.0)

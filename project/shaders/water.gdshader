@@ -83,6 +83,13 @@ void fragment() {
 	float hsh = hash21(cell + floor(u_time * vec2(1.7, 1.3)));
 	float spark = step(0.985, hsh) * calm * star_sparkle * (0.5 + 0.5 * sin(u_time * 9.0 + hsh * 40.0));
 	emis += vec3(0.8, 0.9, 1.0) * spark * 0.35 * fres;
+	// crest foam: a thin white highlight where a ripple's local height peaks.
+	// This is a genuinely deep, opaque night lake (no visible lakebed at all —
+	// the "caustics on the lake floor" idea from the research brief doesn't fit
+	// this scene physically), so the water-detail upgrade instead reuses the
+	// ripple field already computed above rather than inventing a lit floor.
+	float crest = smoothstep(0.55, 0.95, rip.x) * smoothstep(0.15, 0.55, abs(rip.x));
+	emis += vec3(0.9, 0.95, 1.0) * crest * 0.6;
 	// planar reflection: mirrored camera(s), UVs perturbed by the wave normal
 	if (refl_mode >= 2) {
 		bool right = (refl_mode == 3 && VIEW_INDEX == VIEW_RIGHT);

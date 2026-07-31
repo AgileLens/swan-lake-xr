@@ -12,7 +12,10 @@ extends Node
 
 const MODES := ["analytic", "probe", "planar", "planar stereo"]
 const REFL_FOV := 95.0
-const REFL_SIZE := 768
+const REFL_SIZE := 1024  # was 768; genuine GPU cost tied directly to a visible
+                          # quality knob (reflection sharpness), unlike a blanket
+                          # full-screen post effect — a good match for XR2-class
+                          # mobile GPU headroom per the research brief
 const PREVIEW_IPD := 0.063  # desktop-only stand-in so mode 3 is testable off-headset
 
 var main  # SwanLakeMain
@@ -67,7 +70,7 @@ func _add_eye() -> void:
 	var vp := SubViewport.new()
 	vp.size = Vector2i(REFL_SIZE, REFL_SIZE)
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	vp.msaa_3d = Viewport.MSAA_DISABLED
+	vp.msaa_3d = Viewport.MSAA_2X
 	main.add_child(vp)
 	var c := Camera3D.new()
 	c.fov = REFL_FOV

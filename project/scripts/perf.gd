@@ -43,8 +43,9 @@ func _process(delta: float) -> void:
 			avg += s
 		avg /= maxf(samples.size(), 1)
 		if hud_on:
-			hud.text = "fps %d | tier %d | refl %s | in L:%s R:%s" % [
-				int(avg), tier, main.reflections.mode_name(),
+			hud.text = "fps %d | tier %d | refl %s | corps %s | flies %d | in L:%s R:%s" % [
+				int(avg), tier, main.reflections.mode_name(), main.megaflock.level_name(),
+				main.fireflies.particles.amount,
 				main.hand_input.source_name("left"), main.hand_input.source_name("right")]
 		# Android's gfxinfo reports zero frames for this app — Godot renders through
 		# its own Vulkan/XR swapchain, not Choreographer — so the engine's own
@@ -66,6 +67,10 @@ func _step_down() -> void:
 	if main.megaflock.level > 1:
 		main.megaflock.set_level(main.megaflock.level - 1)
 		return
+	# Fireflies (2500 default) are the second-biggest addition — shed a tier at
+	# a time down to the original 130 before touching anything else.
+	if main.fireflies.step_down_amount():
+		return
 	# Reflections can shed more than once (stereo planar → mono planar → probe),
 	# so each call sheds exactly one thing and only advances the tier when the
 	# reflection ladder is exhausted — otherwise one notch would skip a rung.
@@ -78,7 +83,6 @@ func _step_down() -> void:
 			main.moon.shadow_enabled = false
 		2:
 			main.conductor.set_sparkle_level(0)
-			main.fireflies.particles.amount = 80
 		3:
 			get_viewport().msaa_3d = Viewport.MSAA_2X
 		_:
