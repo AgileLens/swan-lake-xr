@@ -30,12 +30,17 @@ func setup(m) -> void:
 	main = m
 	_shader_mat = ShaderMaterial.new()
 	_shader_mat.shader = load("res://shaders/corps.gdshader")
-	near_mmi = _make_mmi("res://assets/swan_style1.glb")
+	# Alex + Dax: "more swans, and organic swans." Near ring upgraded from
+	# lowpoly (style1) to organic (style2) — it's the one close enough to read
+	# detail on — and the default level bumped from 200 to 800. Far ring stays
+	# origami (style0): it's silhouette-distance only, upgrading it would add
+	# per-instance cost nobody would ever see clearly.
+	near_mmi = _make_mmi("res://assets/swan_style2.glb")
 	far_mmi = _make_mmi("res://assets/swan_style0.glb")
-	# Audience visible from first launch — tonight's audience/chorus work is
+	# Audience visible from first launch — the audience/chorus work is
 	# otherwise invisible unless someone opens the orb menu, which a demo guest
-	# won't know to do. 200 is cheap; the governor can still shed it under load.
-	set_level(1)
+	# won't know to do. The governor can still shed it under load.
+	set_level(2)
 
 func _make_mmi(glb: String) -> MultiMeshInstance3D:
 	var scene: PackedScene = load(glb)

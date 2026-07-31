@@ -14,6 +14,13 @@ var grace := 8.0  # let startup settle
 # features a capture is meant to show. Off for --shot; always on in a headset.
 var enabled := true
 var _log_t := 0
+var _sky_cheap := false
+# Once every rung is exhausted, stop calling _step_down() forever — on real
+# device hardware tonight this ran to tier=404+ with zero effect because fps
+# was pinned below target by a cost nothing in the ladder touched (the sky
+# shader — see sky_cheap below). A tier that climbs without bound is also
+# useless in the HUD. exhausted latches once the match's last case fires.
+var _exhausted := false
 
 func setup(m) -> void:
 	main = m
@@ -58,7 +65,7 @@ func _process(delta: float) -> void:
 				Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
 				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
 				Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0])
-		if enabled and grace <= 0.0 and avg < 71.0:
+		if enabled and not _exhausted and grace <= 0.0 and avg < 71.0:
 			_step_down()
 			samples.clear()
 
@@ -77,6 +84,13 @@ func _step_down() -> void:
 	if main.reflections.mode >= 2:
 		main.reflections.apply(main.reflections.mode - 1)
 		return
+	# The sky (cloud deck + aurora, both multi-octave fbm, full-screen, every
+	# frame) was never gated by anything above and turned out to be the real
+	# fixed-cost bottleneck on real hardware — shed it before the small stuff.
+	if not _sky_cheap:
+		_sky_cheap = true
+		main.sky_mat.set_shader_parameter("sky_cheap", true)
+		return
 	tier += 1
 	match tier:
 		1:
@@ -86,4 +100,4 @@ func _step_down() -> void:
 		3:
 			get_viewport().msaa_3d = Viewport.MSAA_2X
 		_:
-			pass
+			_exhausted = true

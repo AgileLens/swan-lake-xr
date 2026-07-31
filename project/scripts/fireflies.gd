@@ -5,9 +5,8 @@ extends Node
 var main  # SwanLakeMain
 var particles: GPUParticles3D
 var pmat: ParticleProcessMaterial
-var draw_mat: StandardMaterial3D
+var draw_mat: ShaderMaterial
 var attractor: GPUParticlesAttractorSphere3D
-var base_color := Color(0.55, 0.85, 1.0)
 var accent_color := Color(1.0, 0.75, 0.9)
 var _celebrate := 0.0
 # Was 130 — the research brief on mobile-XR GPU headroom flagged this as the
@@ -38,28 +37,21 @@ func setup(m) -> void:
 	particles.process_material = pmat
 	var quad := QuadMesh.new()
 	quad.size = Vector2(0.035, 0.035)
-	draw_mat = StandardMaterial3D.new()
-	draw_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	draw_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	draw_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	draw_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	# Custom shader (was StandardMaterial3D): fireflies and snow were sharing the
+	# exact same visual language — a small pale radial-glow billboard, just
+	# differently colored. Alex + Dax: "fireflies should have a pulsing yellow
+	# glow and turn on and off, in time to the music." A smooth emission-color
+	# lerp can't do a real blink; this needs per-particle phase logic.
+	draw_mat = ShaderMaterial.new()
+	draw_mat.shader = load("res://shaders/firefly.gdshader")
 	var grad := GradientTexture2D.new()
 	grad.fill = GradientTexture2D.FILL_RADIAL
 	grad.fill_from = Vector2(0.5, 0.5); grad.fill_to = Vector2(0.5, 0.0)
 	var g := Gradient.new()
 	g.set_color(0, Color(1, 1, 1, 1)); g.set_color(1, Color(1, 1, 1, 0))
 	grad.gradient = g
-	draw_mat.albedo_texture = grad
-	draw_mat.albedo_color = Color(1, 1, 1, 0.34)
-	draw_mat.emission_enabled = true
-	draw_mat.emission = base_color
-	draw_mat.emission_energy_multiplier = 1.6
-	# Soft-particle fade: StandardMaterial3D's built-in proximity_fade samples the
-	# depth texture and fades a particle out as it nears solid geometry, so a
-	# firefly drifting into a swan or the dock blends instead of z-fighting as a
-	# hard-edged sprite. No custom shader needed — Mobile renderer supports this.
-	draw_mat.proximity_fade_enabled = true
-	draw_mat.proximity_fade_distance = 0.35
+	draw_mat.set_shader_parameter("albedo_tex", grad)
+	draw_mat.set_shader_parameter("proximity_fade_distance", 0.35)
 	quad.material = draw_mat
 	particles.draw_pass_1 = quad
 	particles.position = Vector3(0, 1.0, -6)
@@ -70,9 +62,11 @@ func setup(m) -> void:
 	attractor.attenuation = 1.5
 	main.add_child(attractor)
 
-func set_mood_colors(base: Color, accent: Color) -> void:
-	base_color = base
+func set_mood_colors(_base: Color, accent: Color) -> void:
 	accent_color = accent
+	# warm_color stays fixed (yellow firefly glow) regardless of mood — only the
+	# conducting-energy accent shifts per mood, same as before
+	draw_mat.set_shader_parameter("accent_color", accent)
 
 func celebrate() -> void:
 	_celebrate = 3.0
@@ -91,8 +85,12 @@ func _process(delta: float) -> void:
 	var ce: float = main.conductor.conduct_energy if main.conductor else 0.0
 	var me: float = main.music.energy
 	var drive := clampf(ce * 0.85 + me * 0.45 + _celebrate * 0.33, 0.0, 1.3)
-	draw_mat.emission = base_color.lerp(accent_color, clampf(ce * 1.2, 0, 1))
-	draw_mat.emission_energy_multiplier = 1.3 + drive * 3.4
+	# Pure warm-yellow at rest; conducting hard shifts toward the mood's accent
+	# color, same "you're doing this" legibility as before — just layered on
+	# top of a blink instead of replacing it.
+	draw_mat.set_shader_parameter("accent_mix", clampf(ce * 1.2, 0.0, 1.0))
+	draw_mat.set_shader_parameter("drive", drive)
+	draw_mat.set_shader_parameter("beat_phase", main.music.beat_phase())
 	particles.speed_scale = 0.75 + drive * 1.1
 	pmat.turbulence_noise_strength = 0.32 + drive * 0.5
 	# attract toward baton tip while conducting hard, or into the moonbeam during gather

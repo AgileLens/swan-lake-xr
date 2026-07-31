@@ -105,9 +105,17 @@ func _build_environment() -> void:
 	sky_mat = ShaderMaterial.new()
 	sky_mat.shader = load("res://shaders/sky.gdshader")
 	sky.sky_material = sky_mat
-	# 64 was fine for a plain gradient, but with clouds and aurora the low-res
-	# radiance cubemap's face boundaries showed as a hard vertical seam in the sky.
-	sky.radiance_size = Sky.RADIANCE_SIZE_256
+	# REVERTED to 64. When the sky got a hard vertical seam after adding clouds+
+	# aurora, I wrongly suspected radiance resolution and bumped this to 256 —
+	# a 16x increase in the per-frame radiance-capture pixel count (256²×6 vs
+	# 64²×6), recomputed every frame because of PROCESS_MODE_REALTIME below. The
+	# seam's real cause was atan(d.x,d.z) wrapping at ±π (see sky.gdshader) — I
+	# fixed THAT the same night but never reverted this, and it went unnoticed on
+	# desktop (M1 Max has GPU headroom to spare) until live on-device testing on
+	# the actual Swan hit fps=37 with the perf governor's ENTIRE ladder (corps,
+	# fireflies, reflections, shadows, sparkles, MSAA) already exhausted and
+	# still no recovery — this uncapped, ungoverned cost is the likely reason.
+	sky.radiance_size = Sky.RADIANCE_SIZE_64
 	sky.process_mode = Sky.PROCESS_MODE_REALTIME
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky

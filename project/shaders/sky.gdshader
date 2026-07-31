@@ -17,6 +17,12 @@ uniform float aurora_intensity = 0.0;  // per mood
 uniform vec3 aurora_a : source_color = vec3(0.18, 0.95, 0.55);
 uniform vec3 aurora_b : source_color = vec3(0.55, 0.30, 0.95);
 uniform float music_energy = 0.0;
+// Perf-governable: the aurora alone is up to 7 fbm() calls per pixel (5 octaves
+// each = ~35 vnoise evaluations), full-screen, every frame. Never gated by the
+// perf governor's original ladder (corps/fireflies/reflections/shadows/sparkles/
+// MSAA) — a real gap found via on-device fps that never recovered even after
+// every one of those was already at minimum.
+uniform bool sky_cheap = false;
 
 float hash3(vec3 p) {
 	return fract(sin(dot(p, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
@@ -75,8 +81,9 @@ void sky() {
 		 * smoothstep(0.0, 0.15, d.y);
 	vec3 mdir = normalize(moon_dir);
 
-	// --- aurora: curtains, drawn under the clouds so the deck can occlude them
-	if (aurora_intensity > 0.001 && d.y > 0.02) {
+	// --- aurora: curtains, drawn under the clouds so the deck can occlude them.
+	// This is the single most expensive thing in the shader — cut first.
+	if (!sky_cheap && aurora_intensity > 0.001 && d.y > 0.02) {
 		// Horizontal direction as the noise coordinate. Using atan(d.x, d.z) here
 		// put a hard vertical seam straight ahead of the viewer, where the angle
 		// wraps ±π — the normalized direction vector is continuous everywhere and
@@ -108,9 +115,13 @@ void sky() {
 		vec2 cp = d.xz / max(d.y, 0.015) * 0.55;
 		cp += vec2(u_time * cloud_speed, u_time * cloud_speed * 0.6);
 		float n = fbm(cp);
-		// a slower second layer gives parallax between high and low cloud
-		float n2 = fbm(cp * 0.47 + vec2(11.0, 5.0) - u_time * cloud_speed * 0.35);
-		float dens = n * 0.65 + n2 * 0.35;
+		// a slower second layer gives parallax between high and low cloud — skip
+		// it in cheap mode, it's a second full fbm() call for a subtle effect
+		float dens = n;
+		if (!sky_cheap) {
+			float n2 = fbm(cp * 0.47 + vec2(11.0, 5.0) - u_time * cloud_speed * 0.35);
+			dens = n * 0.65 + n2 * 0.35;
+		}
 		float c = smoothstep(0.62 - cloud_cover * 0.45, 0.86 - cloud_cover * 0.30, dens);
 		c *= smoothstep(0.015, 0.16, d.y);
 		// silver lining: brighter where the cloud faces the moon

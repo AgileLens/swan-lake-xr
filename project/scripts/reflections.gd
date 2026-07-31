@@ -27,7 +27,12 @@ var refl_cams: Array[Camera3D] = []
 
 func setup(m) -> void:
 	main = m
-	apply(0)
+	# Alex + Dax, in-headset: "planar stereo reflections and shadows look
+	# great — have them on by default." Shadows already default on
+	# (main.gd's moon.shadow_enabled = true); this makes stereo the default
+	# reflection mode instead of analytic. The perf governor can still shed it
+	# down through mono/probe/off if frame rate genuinely can't hold it.
+	apply(3)
 
 func mode_name() -> String:
 	return MODES[mode]
