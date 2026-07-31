@@ -16,7 +16,8 @@ const CHORUS_ON := 0.34
 const CHORUS_FULL := 0.72
 
 var main  # SwanLakeMain
-var level := 0
+var level := 0  # set_level() is called explicitly in setup() — changing this
+                 # alone does nothing, since it never populates the multimesh
 var near_mmi: MultiMeshInstance3D
 var far_mmi: MultiMeshInstance3D
 var states: Array = []           # per instance: [angle, radius, drift_speed]
@@ -31,6 +32,10 @@ func setup(m) -> void:
 	_shader_mat.shader = load("res://shaders/corps.gdshader")
 	near_mmi = _make_mmi("res://assets/swan_style1.glb")
 	far_mmi = _make_mmi("res://assets/swan_style0.glb")
+	# Audience visible from first launch — tonight's audience/chorus work is
+	# otherwise invisible unless someone opens the orb menu, which a demo guest
+	# won't know to do. 200 is cheap; the governor can still shed it under load.
+	set_level(1)
 
 func _make_mmi(glb: String) -> MultiMeshInstance3D:
 	var scene: PackedScene = load(glb)
