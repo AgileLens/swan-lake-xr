@@ -7,7 +7,7 @@ extends Node3D
 const LAKE_CENTER := Vector3(0, 0, -10)
 const HANDS := ["left", "right"]
 # Shown on the intro card so the running build is identifiable in-headset.
-const BUILD_TAG := "v3 · 2026-07-30"
+const BUILD_TAG := "v4 · 2026-07-31"
 
 var t := 0.0
 var xr_active := false
