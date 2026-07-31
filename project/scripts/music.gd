@@ -84,6 +84,23 @@ func _playhead() -> float:
 	var p: AudioStreamPlayer = _act4 if act4_active else _act2
 	return p.get_playback_position() + AudioServer.get_time_since_last_mix()
 
+func beat_seconds() -> float:
+	var bpm: float = _active_track()["bpm"]
+	return 60.0 / bpm
+
+func beat_phase() -> float:
+	# 0..1 across one quarter note, locked to playback position. Drives the corps
+	# de ballet's sway so thousands of swans move on the same beat the SFX land on.
+	var offset: float = _active_track()["offset"]
+	var b := beat_seconds()
+	return fposmod(_playhead() - offset, b) / b
+
+func bar_phase() -> float:
+	# 0..1 across four beats — slower gestures (a wing lift) want the bar, not the beat
+	var offset: float = _active_track()["offset"]
+	var bar := beat_seconds() * 4.0
+	return fposmod(_playhead() - offset, bar) / bar
+
 func grid_seconds() -> float:
 	# NOTE: Dictionary values are untyped, so every read needs an explicit
 	# annotation — `:=` inference fails to compile (KB: godot-pico-apk-pipeline #6).

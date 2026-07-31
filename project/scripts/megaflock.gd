@@ -9,6 +9,11 @@ const COUNTS: Array[int] = [0, 200, 800, 2000, 5000]
 const NEAR_COUNT := 150          # instances that use the nicer mesh
 const R_MIN := 17.0              # keep outside the hero flock's roam bounds
 const R_MAX := 58.0
+# What the audience is watching: the dock, where the conductor stands.
+const STAGE := Vector3(0, 0, 0)
+# How strongly the music has to swell before the audience joins in as a chorus.
+const CHORUS_ON := 0.34
+const CHORUS_FULL := 0.72
 
 var main  # SwanLakeMain
 var level := 0
@@ -18,6 +23,7 @@ var states: Array = []           # per instance: [angle, radius, drift_speed]
 var _cursor := 0
 var _prev_level_before_finale := -1
 var _shader_mat: ShaderMaterial
+var chorus := 0.0  # 0 = watching, 1 = singing along
 
 func setup(m) -> void:
 	main = m
@@ -84,16 +90,23 @@ func _fill(mmi: MultiMeshInstance3D, count: int, seed_off: int) -> void:
 
 func _apply_instance(mmi: MultiMeshInstance3D, i: int, ang: float, r: float, drift: float, rng: RandomNumberGenerator) -> void:
 	var pos: Vector3 = main.LAKE_CENTER + Vector3(sin(ang) * r, 0.0, cos(ang) * r)
-	# face tangentially (direction of drift)
-	var heading := ang + (PI * 0.5 if drift > 0.0 else -PI * 0.5) + rng.randf_range(-0.4, 0.4)
+	# They're an audience: face the dock, not the direction of travel. A little
+	# jitter so it's a crowd looking at a stage rather than a parade formation.
+	var to_stage: Vector3 = STAGE - pos
+	var jitter := rng.randf_range(-0.25, 0.25)
+	var heading := atan2(to_stage.x, to_stage.z) + jitter
 	var basis := Basis(Vector3.UP, heading)
 	var sc := rng.randf_range(0.85, 1.1)
 	mmi.multimesh.set_instance_transform(i, Transform3D(basis.scaled(Vector3.ONE * sc), pos))
-	# custom data: x = bob phase, y = bob rate
-	mmi.multimesh.set_instance_custom_data(i, Color(rng.randf_range(0.0, TAU), rng.randf_range(0.7, 1.3), 0, 0))
+	# x = bob phase, y = bob rate, z = wave delay by distance from the stage
+	# (so a chorus beat travels outward through the ranks), w = sway scale
+	var wave: float = clampf((pos.distance_to(STAGE) - R_MIN) / (R_MAX - R_MIN), 0.0, 1.0)
+	mmi.multimesh.set_instance_custom_data(i, Color(
+		rng.randf_range(0.0, TAU), rng.randf_range(0.7, 1.3),
+		wave, rng.randf_range(0.6, 1.4)))
 	var idx := i if mmi == near_mmi else NEAR_COUNT + i
 	if idx < states.size():
-		states[idx] = [ang, r, drift]
+		states[idx] = [ang, r, drift, jitter]
 
 func finale_swell() -> void:
 	if COUNTS[level] == 0:
@@ -110,6 +123,17 @@ func _process(delta: float) -> void:
 	if total == 0:
 		return
 	_shader_mat.set_shader_parameter("u_time", main.t)
+	# An audience holds its place and watches; a chorus joins in. Swells in the
+	# score bring them in, and the Act 4 finale pins them fully on.
+	var e: float = main.music.energy
+	var want: float = smoothstep(CHORUS_ON, CHORUS_FULL, e)
+	if main.music.act4_active:
+		want = 1.0
+	chorus = lerpf(chorus, want, clampf(delta * 1.6, 0.0, 1.0))
+	_shader_mat.set_shader_parameter("chorus", chorus)
+	_shader_mat.set_shader_parameter("beat_phase", main.music.beat_phase())
+	_shader_mat.set_shader_parameter("bar_phase", main.music.bar_phase())
+	_shader_mat.set_shader_parameter("music_energy", e)
 	# round-robin drift: ~200 instances updated per frame keeps CPU flat at any count
 	var batch := mini(200, total)
 	for k in batch:
@@ -117,12 +141,19 @@ func _process(delta: float) -> void:
 		var s = states[idx]
 		if s == null:
 			continue
-		s[0] += s[2] * delta * float(total) / float(batch) * 0.016
+		# An audience barely migrates — drift is cut right back so they hold their
+		# places, and cut further still once they're singing along.
+		s[0] += s[2] * delta * float(total) / float(batch) * 0.016 * (0.18 - 0.12 * chorus)
 		var near := idx < NEAR_COUNT and near_mmi.multimesh.instance_count > 0
 		var mmi := near_mmi if near else far_mmi
 		var i := idx if near else idx - NEAR_COUNT
 		if i >= 0 and i < mmi.multimesh.instance_count:
 			var t: Transform3D = mmi.multimesh.get_instance_transform(i)
 			var pos: Vector3 = main.LAKE_CENTER + Vector3(sin(s[0]) * s[1], 0.0, cos(s[0]) * s[1])
-			mmi.multimesh.set_instance_transform(i, Transform3D(t.basis, pos))
+			# keep facing the stage as they drift, or an audience slowly ends up
+			# looking at the scenery. Scale is carried in the basis, so preserve it.
+			var to_stage: Vector3 = STAGE - pos
+			var sc: float = t.basis.get_scale().y
+			var b := Basis(Vector3.UP, atan2(to_stage.x, to_stage.z) + s[3])
+			mmi.multimesh.set_instance_transform(i, Transform3D(b.scaled(Vector3.ONE * sc), pos))
 	_cursor = (_cursor + batch) % total
