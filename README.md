@@ -20,7 +20,8 @@ Built entirely with **Godot 4.7 + the OpenXR Vendors plugin**, 100% procedural a
 - **Synesthesia.** Fireflies shift color and pattern with your conducting energy and the orchestra's dynamics; a Fantasia-style sparkle trail follows your baton. With hand tracking, pinch modulates the response.
 - **Easter eggs.** Find and light the seven stars of **Cygnus, the Swan** (each is a chime note in key). Complete the constellation and watch what happens at the nest.
 - **Reflections.** Four water-reflection techniques (analytic / probe / planar / planar stereo) behind a live toggle. Stereo renders a mirrored camera per eye, so reflections sit at the right depth instead of being pasted flat across both.
-- **Performance governor.** Watches frame rate and sheds effects one notch at a time to hold the target.
+- **Corps de ballet.** A stress-test mode that fills the outer lake with up to 5,000 additional swans — two `MultiMeshInstance3D`s (a nicer near mesh, a flat far mesh) keep it at two draw calls total regardless of count, with per-instance bob/sway running in a vertex shader and only a rotating batch of instances re-positioned per frame. Swells in automatically for the Act 4 finale, and it's the first thing the performance governor sheds if frame rate dips — a direct answer to "can the Swan handle a bazillion swans?"
+- **Performance governor.** Watches frame rate and sheds effects one notch at a time to hold the target — corps size first, then reflections, shadows, sparkles, and MSAA.
 
 ## Controls
 
@@ -32,7 +33,7 @@ Built entirely with **Godot 4.7 + the OpenXR Vendors plugin**, 100% procedural a
 | Right A | Cycle mood (Night / Dusk / Dawn) |
 | Right B | Trigger the Act 4 finale |
 | Left X | Cycle weather |
-| Left Y | Settings orbs (swan style, mood, weather, reflections, shadows, sparkles, baton pose, SFX timing, FPS HUD) |
+| Left Y | Settings orbs (swan style, corps size, mood, weather, reflections, shadows, sparkles, baton pose, SFX timing, FPS HUD) |
 | Right stick (menu open) | Fine-tune the baton grip angle — saved between sessions |
 
 Put the controllers down and the piece keeps going on hand tracking alone — the hands and baton follow your real hands, and pinch carries the verbs:
@@ -45,7 +46,7 @@ Put the controllers down and the piece keeps going on hand tracking alone — th
 
 Pick a controller back up and it takes over instantly — a tracked controller always wins.
 
-Desktop preview (no headset): mouse-look + `1/2/3` mood, `SPACE` ripple, `G` gather, `F` finale, `K` firework, `W` weather, `R` reflections, `S` swan style, `B` baton pose, `T` SFX timing, `M` orb menu, `C`/`N` easter-egg cheats, `H` FPS HUD, `P` screenshot.
+Desktop preview (no headset): mouse-look + `1/2/3` mood, `SPACE` ripple, `G` gather, `F` finale, `K` firework, `W` weather, `R` reflections, `S` swan style, `X` corps size, `B` baton pose, `T` SFX timing, `M` orb menu, `C`/`N` easter-egg cheats, `H` FPS HUD, `P` screenshot.
 
 ## Build
 
@@ -91,6 +92,7 @@ Desktop look-dev:
 4. **Open the orbs (left Y) and flip swan styles.** Origami → low-poly → organic → detailed, live, mid-glide.
 5. **Set weather to rain, reflections to planar stereo.** Rain rings on mirror-water at dusk is the screenshot you'll send someone — and in stereo the reflections sit at the right depth.
 6. **Dial in the baton.** Open the orbs, aim at *Baton*, and push the right stick up or down until the wand sits in your hand the way you'd actually hold one. It remembers.
+7. **Push the corps to 5,000.** Open the orbs, aim at *Corps*, and cycle it up. Watch the FPS HUD (also in the orbs) — the performance governor will pull it back down the instant frame rate needs it, so you can't actually break the experience by asking for too many swans.
 
 ## Screenshots
 
@@ -98,6 +100,7 @@ Desktop look-dev:
 |---|---|
 | ![Dusk fireworks](docs/dusk_fireworks.png) | ![Dawn](docs/dawn_low.png) |
 | ![Swan styles](docs/styles_grid.png) | ![Planar reflections](docs/night_planar.png) |
+| ![Corps de ballet — 2,000 swans](docs/finale_corps_2000.png) | |
 
 ## Credits
 
