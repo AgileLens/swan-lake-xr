@@ -176,8 +176,18 @@ func set_sparkle_level(lv: int) -> void:
 # ---------------------------------------------------------------- baton pose
 
 func effective_pitch() -> float:
+	# Alex + Dax, in-headset on "downbeat -65°": "positions the hand flipped and
+	# mirrored — thumb in the right place but upside down, fingers where the
+	# wrist should be." A single-axis (X) rotation never moves a point's X
+	# coordinate — which is exactly why the thumb (offset only in X) stayed put
+	# while everything offset in Y/Z (fingers, wrist) appeared to swap: this is
+	# what a pure pitch approaching ±90° looks like on a model with no strong
+	# "this side is up" cues at rest, not a mirroring bug. The old [-90, 15]
+	# clamp let "downbeat" (-65) plus the full fine-tune range (±45) reach
+	# exactly -90 — the worst point, where the model reads edge-on and folds
+	# in projection. Tightened so the combination can no longer reach it.
 	var base: float = POSE_PRESETS[pose_index].pitch
-	return clampf(base + pose_fine, -90.0, 15.0)
+	return clampf(base + pose_fine, -78.0, 15.0)
 
 func pose_label() -> String:
 	return "%s %d°" % [POSE_PRESETS[pose_index].name, roundi(effective_pitch())]

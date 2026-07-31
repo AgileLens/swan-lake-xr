@@ -248,7 +248,14 @@ add_prim(bm, lambda b: bmesh.ops.create_cone(b, cap_ends=True, segments=10, radi
 add_prim(bm, lambda b: bmesh.ops.create_uvsphere(b, u_segments=10, v_segments=8, radius=0.011), (0, 0, 0.038))
 bm.to_mesh(bme); bm.free(); smooth(bme); bme.materials.append(PEARL)
 baton = bpy.data.objects.new("Baton", bme)
-link(baton, parent=hr, loc=(-0.002, -0.035, -0.055))
+# Alex, in-headset: "baton should be held between pointer finger and thumb."
+# The old (-0.002, -0.035, -0.055) offset was eyeballed and sat near hand-center
+# X rather than between the two — computed directly from this same function's
+# own thumb/index-finger formulas instead of re-eyeballing:
+#   thumb  = (side*0.048, -0.02 - curl*0.015, -0.055)              side=-1 (HandR)
+#   index  = ((0-1.5)*0.021, -sin(curl*0.9)*0.045, -0.095-cos(curl*0.9)*0.045)
+#   midpoint (curl=0.85) = (-0.03975, -0.03196, -0.09123)
+link(baton, parent=hr, loc=(-0.03975, -0.03196, -0.09123))
 baton.rotation_euler = Euler((math.radians(-90+14), 0, 0))  # cone axis +Z->points forward -Z-ish through grip
 
 bpy.ops.object.select_all(action='DESELECT')

@@ -38,6 +38,19 @@ var _edge := {"left": false, "right": false}
 # equivalent requires com.oculus.permission.HAND_TRACKING), so tracking may simply
 # never arrive. Log each transition once so a logcat grab settles it.
 var _logged := {"left": "", "right": ""}
+# Live on-device finding: hand tracking never engaged all session, even after
+# the user visibly set the controllers down. Root cause: PICO's controllers
+# appear to keep reporting has_tracking_data=true indefinitely (last-known
+# pose) even when not held — there's no proximity/grip signal this project's
+# input map exposes to distinguish "held" from "idle on a table." Detecting it
+# indirectly instead: a controller that hasn't moved at all for a while, while
+# a real unobstructed hand IS available, is far more likely resting than
+# gripped (conducting is inherently a moving gesture). This is a heuristic,
+# not a proximity sensor — it trades a small risk (briefly favoring hands if
+# someone holds a controller dead-still) for fixing hands never working at all.
+var _last_pos := {"left": Vector3.INF, "right": Vector3.INF}
+var _static_time := {"left": 0.0, "right": 0.0}
+const STATIC_HANDOFF := 1.5  # seconds of no controller movement before hands may win
 
 func setup(m) -> void:
 	main = m
@@ -70,12 +83,30 @@ func _real_hands(hand: String) -> bool:
 	# reject a hand pose the runtime synthesized from a controller
 	return t.hand_tracking_source == XRHandTracker.HAND_TRACKING_SOURCE_UNOBSTRUCTED
 
-func _resolve(hand: String) -> void:
+func _update_static_time(hand: String, c: XRController3D, delta: float) -> void:
+	var pos: Vector3 = c.global_position
+	var last: Vector3 = _last_pos[hand]
+	if last != Vector3.INF and pos.distance_to(last) < 0.001:
+		_static_time[hand] += delta
+	else:
+		_static_time[hand] = 0.0
+	_last_pos[hand] = pos
+
+func _resolve(hand: String, delta: float) -> void:
 	var c := controller(hand)
-	# a genuinely tracked controller wins outright (lesson 2)
-	if c and c.get_has_tracking_data():
+	var ctrl_tracked: bool = c != null and c.get_has_tracking_data()
+	if ctrl_tracked:
+		_update_static_time(hand, c, delta)
+	else:
+		_static_time[hand] = 0.0
+		_last_pos[hand] = Vector3.INF
+	var ctrl_idle: bool = ctrl_tracked and _static_time[hand] > STATIC_HANDOFF
+	var hands_ready := _real_hands(hand)
+	# a genuinely tracked, moving controller wins outright (lesson 2); a
+	# controller that's stopped moving loses priority to real hand data if any
+	if ctrl_tracked and not (ctrl_idle and hands_ready):
 		source[hand] = Src.CONTROLLER
-	elif _real_hands(hand):
+	elif hands_ready:
 		source[hand] = Src.HANDS
 	else:
 		source[hand] = Src.NONE
@@ -132,11 +163,11 @@ func _update_pinch(hand: String) -> void:
 		_held[hand] = false
 	_edge[hand] = _held[hand] and not was
 
-func _process(_d: float) -> void:
+func _process(delta: float) -> void:
 	if not main.xr_active:
 		return
 	for hand in HANDS:
-		_resolve(hand)
+		_resolve(hand, delta)
 		_update_pinch(hand)
 		var s: String = source_name(hand)
 		if _logged[hand] != s:
