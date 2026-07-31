@@ -64,6 +64,27 @@ def attach_face(neck_me, head, smooth=True, glint=False):
             if (c - (head + Vector((sx * 0.052, 0.055, 0.028)))).length < 0.024:
                 p.material_index = 2
 
+
+def make_lower_beak(head, neck_parent, smooth=True):
+    """A separate hinged lower-beak object so it can open/close at runtime
+    (swan.gd rotates the BeakLower node). Same contract across all 4 styles —
+    hinge point is the mouth corner, not the head centre, so rotating the node
+    swings the beak open rather than through the head."""
+    beak_p = head + Vector((0, 0.135, -0.005))
+    bl = bmesh.new()
+    segs = 5 if not smooth else 12
+    bmesh.ops.create_cone(bl, cap_ends=True, segments=segs, radius1=0.036, radius2=0.006, depth=0.145)
+    bmesh.ops.rotate(bl, cent=(0, 0, 0), matrix=Euler((-math.pi / 2, 0, 0)).to_matrix(), verts=bl.verts)
+    bmesh.ops.scale(bl, vec=Vector((1.0, 1.0, 0.45)), verts=bl.verts)
+    bmesh.ops.translate(bl, vec=Vector((0, 0.070, -0.012)), verts=bl.verts)
+    beak_mesh = bpy.data.meshes.new("BeakLower")
+    bl.to_mesh(beak_mesh); bl.free()
+    shade(beak_mesh, smooth)
+    beak_mesh.materials.append(ORANGE)
+    beak_lower = bpy.data.objects.new("BeakLower", beak_mesh)
+    link(beak_lower, parent=neck_parent, loc=head - Vector((0, 0.068, 0.0)))
+    return beak_lower
+
 def scurve(u):
     return Vector((0,
         0.10 * math.sin(u * math.pi * 1.15) + u * 0.14 + 0.06 * u * u + 0.02,
@@ -210,6 +231,7 @@ add_prim(bm, lambda bb: bmesh.ops.create_cube(bb, size=1.0), HEAD_LOCAL, scale=(
 bm.to_mesh(nme); bm.free()
 attach_face(nme, HEAD_LOCAL, smooth=False)
 neck = bpy.data.objects.new("NeckHead", nme); link(neck, parent=body, loc=NECK_BASE)
+make_lower_beak(HEAD_LOCAL, neck, smooth=False)
 add_wings_tail(body, smooth=False, feathers=1, petals=3)
 normalize_and_export(body, f"{OUTDIR}/swan_style0.glb")
 
@@ -233,6 +255,7 @@ add_prim(bm, lambda b: bmesh.ops.create_uvsphere(b, u_segments=12, v_segments=8,
 bm.to_mesh(nme); bm.free()
 attach_face(nme, HEAD_LOCAL, smooth=True)
 neck = bpy.data.objects.new("NeckHead", nme); link(neck, parent=body, loc=(0, 0.31, 0.26))
+make_lower_beak(HEAD_LOCAL, neck, smooth=True)
 add_wings_tail(body, smooth=True, feathers=1, petals=3)
 normalize_and_export(body, f"{OUTDIR}/swan_style1.glb")
 
@@ -241,6 +264,7 @@ body = mball_to_mesh("Body", BODY_BALLS, 0.022, WHITE, decimate=0.75, smooth_ite
 neck = mball_to_mesh("NeckHead", neck_balls(14), 0.018, WHITE, smooth_iters=3, smooth_factor=0.5)
 attach_face(neck.data, HEAD_LOCAL, smooth=True)
 neck.parent = body; neck.location = NECK_BASE
+make_lower_beak(HEAD_LOCAL, neck, smooth=True)
 add_wings_tail(body, smooth=True, feathers=1, petals=3)
 normalize_and_export(body, f"{OUTDIR}/swan_style2.glb")
 
@@ -249,6 +273,7 @@ body = mball_to_mesh("Body", BODY_BALLS, 0.014, WHITE, decimate=None, smooth_ite
 neck = mball_to_mesh("NeckHead", neck_balls(18), 0.013, WHITE, smooth_iters=2, smooth_factor=0.4)
 attach_face(neck.data, HEAD_LOCAL, smooth=True)
 neck.parent = body; neck.location = NECK_BASE
+make_lower_beak(HEAD_LOCAL, neck, smooth=True)
 add_wings_tail(body, smooth=True, feathers=3, petals=5)
 normalize_and_export(body, f"{OUTDIR}/swan_style3.glb")
 

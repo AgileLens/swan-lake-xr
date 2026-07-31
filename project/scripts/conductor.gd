@@ -31,6 +31,14 @@ var pose_fine := 0.0  # stick-dialed degrees on top of the preset
 var hand_instances: Array[Node3D] = []
 var anchors := {}  # hand -> Node3D, positioned from HandInput each frame
 var _fine_dirty := false
+# Real skinned hand mesh (XRHandModifier3D + the MIT-licensed rigged hand from
+# godot-demo-projects — see CREDITS.md), toggled against the procedural mitten:
+# mitten visible while holding a controller (it IS the baton grip), skinned hand
+# visible + posed by real joint data when bare. Two visuals, one arbitration
+# source (HandInput.bare()) — no third mechanism to disagree with the other two.
+var skin_mesh := {}      # hand -> Node3D (the Humanoid scene instance)
+var skin_modifier := {}  # hand -> XRHandModifier3D
+var mitten := {}         # hand -> Node3D (the procedural hands.glb instance)
 
 func setup(m) -> void:
 	main = m
@@ -57,6 +65,8 @@ func setup(m) -> void:
 		anchor.add_child(inst)
 		anchors[hand] = anchor
 		hand_instances.append(inst)
+		mitten[hand] = inst
+		_setup_skin_mesh(hand, anchor)
 	left_hand_node = anchors["left"]
 	right_hand_node = anchors["right"]
 	_load_pose()
@@ -107,6 +117,47 @@ func setup(m) -> void:
 	tip_light.light_energy = 0.0
 	tip_light.shadow_enabled = false
 	main.add_child(tip_light)
+
+const HAND_SCENES := {
+	"left": "res://assets/hand_mesh/LeftHandHumanoid.gltf",
+	"right": "res://assets/hand_mesh/RightHandHumanoid.gltf",
+}
+
+func _setup_skin_mesh(hand: String, _anchor: Node3D) -> void:
+	# Real hand tracking only exists in an actual XR session with a live tracking
+	# origin — desktop preview has no XRHandTracker data, so there's nothing for
+	# XRHandModifier3D to read and the mitten already covers that case.
+	if not main.xr_active or main.origin == null:
+		return
+	var scene: PackedScene = load(HAND_SCENES[hand])
+	var inst: Node3D = scene.instantiate()
+	# CRITICAL: parented to XROrigin3D directly, at identity — NOT to the
+	# per-frame anchor. XRHandModifier3D reads joint transforms that are already
+	# relative to the tracking origin (confirmed against hand_input.gd's own
+	# main.origin.global_transform * joint_transform math); if this sat under the
+	# anchor, which _track_hands() overwrites every frame with a fingertip-aim
+	# pose for the baton, the skeleton's own joint-driven positioning would be
+	# double-transformed and the hand would render in the wrong place.
+	main.origin.add_child(inst)
+	inst.visible = false
+	# The demo asset's hand.png is a generic anatomical skin tone — tint it toward
+	# the mitten's ivory/pearl look so the two hand visuals read as one character
+	# rather than a swap between two different art styles.
+	var mesh_inst: MeshInstance3D = inst.find_child("*Mesh*", true, false) as MeshInstance3D
+	if mesh_inst:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.92, 0.93, 0.95)
+		mat.roughness = 0.55
+		mesh_inst.material_override = mat
+	var skel: Skeleton3D = inst.find_child("Skeleton3D", true, false)
+	if skel:
+		var mod := XRHandModifier3D.new()
+		mod.hand_tracker = "/user/hand_tracker/%s" % hand
+		skel.add_child(mod)
+		skin_modifier[hand] = mod
+	else:
+		push_warning("[conductor] no Skeleton3D found in " + HAND_SCENES[hand])
+	skin_mesh[hand] = inst
 
 func tip_position() -> Vector3:
 	# baton tip = the arbitrated right-hand pose, so the sparkle trail, the tip
@@ -182,6 +233,15 @@ func _track_hands() -> void:
 	for hand in main.HANDS:
 		var anchor: Node3D = anchors[hand]
 		var live: bool = main.hand_input.active(hand)
+		var bare: bool = main.hand_input.bare(hand)
+		# Real skinned hand for bare tracking, the mitten+baton for a held
+		# controller — the mitten IS the baton grip, so it stays for controllers.
+		var skin: Node3D = skin_mesh.get(hand)
+		if skin:
+			skin.visible = live and bare
+		var m: Node3D = mitten.get(hand)
+		if m:
+			m.visible = live and not bare
 		anchor.visible = live
 		if live:
 			anchor.global_transform = main.hand_input.pose(hand)

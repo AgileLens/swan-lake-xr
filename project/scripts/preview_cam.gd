@@ -110,7 +110,7 @@ func _run_shots() -> void:
 			if f.ends_with(".png"):
 				d.remove(f)
 	# generous: the scene got much heavier (cloud/aurora sky + up to 2000 corps)
-	get_tree().create_timer(300.0).timeout.connect(func(): print("SHOT_WATCHDOG_QUIT"); get_tree().quit())
+	get_tree().create_timer(480.0).timeout.connect(func(): print("SHOT_WATCHDOG_QUIT"); get_tree().quit())
 	await get_tree().create_timer(1.0).timeout
 	# after the await: the rig is built inside main._ready(), before perf exists
 	main.perf.enabled = false  # deterministic captures — low desktop fps would shed features
@@ -182,6 +182,37 @@ func _run_shots() -> void:
 		_pose()
 		await _settle(0.4)
 		await _save_shot("swanstyle_%d" % i)
+	# dancer close-ups: neck/wing/beak choreography, three moments in the phrase,
+	# framed tight enough to actually judge the pose
+	while main.flock.style_idx != 3:
+		main.flock.cycle_style()
+	await _settle(0.8)
+	for k in 3:
+		# re-aim every iteration: the swan keeps swimming during the settle, so a
+		# position computed once put the camera inside its neck by the 2nd/3rd shot
+		var s0: Node3D = main.flock.swans[1]
+		var sp0: Vector3 = s0.global_position
+		position = sp0 + Vector3(1.6, 0.75, 1.9)
+		yaw = atan2(position.x - sp0.x, position.z - sp0.z)
+		pitch = -0.22
+		_pose()
+		await _settle(1.3)
+		sp0 = s0.global_position
+		position = sp0 + Vector3(1.6, 0.75, 1.9)
+		yaw = atan2(position.x - sp0.x, position.z - sp0.z)
+		_pose()
+		await _save_shot("dancer_%d" % k)
+	# beak check: force it open explicitly rather than trust a fly-by chance catch
+	var sB: Node3D = main.flock.swans[1]
+	if sB.beak:
+		sB._beak_open = 1.0
+	var spB: Vector3 = sB.global_position
+	position = spB + Vector3(0.55, 0.42, 0.75)
+	yaw = atan2(position.x - spB.x, position.z - spB.z)
+	pitch = -0.15
+	_pose()
+	await _save_shot("beak_open")
+	print("BEAK rest=", sB.beak_rest_rot, " open_rot=", sB.beak.rotation if sB.beak else "NO BEAK NODE")
 	# settings orbs: the arc layout has to stay readable as options accumulate
 	_shot_pose(Vector3(0, 1.35, 0.6), 0.0, -0.02)
 	main.menu.toggle()

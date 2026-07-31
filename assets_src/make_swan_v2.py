@@ -109,8 +109,12 @@ def add_prim(bm_target, make, matrix_translate, rot=None, scale=None):
     tmp = bpy.data.meshes.new("tmp"); b2.to_mesh(tmp); b2.free()
     bm_target.from_mesh(tmp); bpy.data.meshes.remove(tmp)
 
+BEAK_TIP = HEAD + Vector((0, 0.135, -0.005))
+# Upper beak stays welded to the head; the LOWER half becomes its own object so it
+# can hinge open. Alex asked for beaks that open and close, and a beak baked into
+# the head mesh can only be animated by deforming vertices in a shader.
 add_prim(bm, lambda b: bmesh.ops.create_cone(b, cap_ends=True, segments=12, radius1=0.040, radius2=0.007, depth=0.15),
-         HEAD + Vector((0, 0.135, -0.005)), rot=Euler((-math.pi/2, 0, 0)))
+         BEAK_TIP, rot=Euler((-math.pi/2, 0, 0)))
 for sx in (+1, -1):
     add_prim(bm, lambda b: bmesh.ops.create_uvsphere(b, u_segments=8, v_segments=6, radius=0.016),
              HEAD + Vector((sx * 0.052, 0.055, 0.028)))
@@ -168,8 +172,25 @@ tail = bpy.data.objects.new("TailFan", tf)
 link(tail, parent=body, loc=(0, -0.46, 0.30))
 tail.rotation_euler = Euler((0.35, 0, 0))
 
+# ---- separate lower beak, hinged at the mouth corner so it can open/close ----
+bl = bmesh.new()
+bmesh.ops.create_cone(bl, cap_ends=True, segments=12, radius1=0.036, radius2=0.006, depth=0.145)
+bmesh.ops.rotate(bl, cent=(0, 0, 0), matrix=Euler((-math.pi / 2, 0, 0)).to_matrix(), verts=bl.verts)
+bmesh.ops.scale(bl, vec=Vector((1.0, 1.0, 0.45)), verts=bl.verts)   # flatter than the upper
+# Build it around the origin and place the OBJECT at the hinge, so rotating the
+# node swings the beak about the mouth corner instead of about the head centre.
+bmesh.ops.translate(bl, vec=Vector((0, 0.070, -0.012)), verts=bl.verts)
+beak_mesh = bpy.data.meshes.new("BeakLower")
+bl.to_mesh(beak_mesh); bl.free()
+smooth(beak_mesh)
+beak_mesh.materials.append(ORANGE)
+beak_lower = bpy.data.objects.new("BeakLower", beak_mesh)
+col.objects.link(beak_lower)
+beak_lower.parent = neck
+beak_lower.location = BEAK_TIP - Vector((0, 0.068, 0.0))
+
 bpy.ops.object.select_all(action='DESELECT')
-for o in (body, neck, tail, *[o for o in col.objects if o.name.startswith("Wing")]):
+for o in (body, neck, tail, beak_lower, *[o for o in col.objects if o.name.startswith("Wing")]):
     o.select_set(True)
 bpy.ops.export_scene.gltf(filepath=f"{OUTDIR}/swan.glb", export_format='GLB', use_selection=True, export_yup=True, export_apply=True)
 print("SWAN2", sum(len(o.data.polygons) for o in col.objects if o.type == 'MESH' and o.select_get()))

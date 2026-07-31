@@ -18,6 +18,15 @@ var flap_phase := -1.0
 var gather_slot := Vector3.INF
 var bow_amount := 0.0
 var neck_rest_rot: Vector3
+var beak: Node3D
+var beak_rest_rot: Vector3
+# Dance layer. These swans are the corps' principals — they should read as
+# dancers, not waterfowl on autopilot, so neck/wing/beak all take a musical
+# phrase rather than a fixed idle wobble. Each swan gets its own offset in the
+# phrase so the group looks choreographed instead of synchronized.
+var dance_seed := 0.0
+var _wing_extra := 0.0
+var _beak_open := 0.0
 # Head-tracking toward the conductor's baton. Eased rather than snapped, so a
 # swan turns to look instead of twitching — and only when the baton is actually
 # near it and roughly in front, so the whole flock doesn't stare in unison.
@@ -46,6 +55,7 @@ func setup(m, f, model: Node3D, seed_val: float) -> void:
 	wander_seed = seed_val
 	_attach_model(model)
 	heading = randf() * TAU
+	dance_seed = seed_val
 	flap_timer = randf_range(14.0, 40.0)
 	preen_timer = randf_range(40.0, 90.0)
 
@@ -53,6 +63,9 @@ func _attach_model(model: Node3D) -> void:
 	model_node = model
 	add_child(model)
 	neck = model.find_child("NeckHead", true, false)
+	beak = model.find_child("BeakLower", true, false)
+	if beak:
+		beak_rest_rot = beak.rotation
 	wing_l = model.find_child("WingL", true, false)
 	wing_r = model.find_child("WingR", true, false)
 	tail = model.find_child("TailFan", true, false)
@@ -175,6 +188,7 @@ func update_swan(delta: float, t: float) -> void:
 		else:
 			var idle := sin(t * 0.8 + wander_seed * 5.0) * 0.06
 			neck.rotation = neck_rest_rot + Vector3(idle - bow_amount * 0.85, 0, 0)
+			_dance_neck(t)
 			_watch_baton()
 	_update_watch_target()
 	flap_timer -= delta
@@ -191,7 +205,8 @@ func update_swan(delta: float, t: float) -> void:
 			var beat := sin(flap_phase * PI * 5.0) * 0.35 * lift
 			_set_wings(lift * 1.05 + beat)
 	else:
-		_set_wings(bow_amount * 0.25)
+		_set_wings(bow_amount * 0.25 + _wing_extra)
+	_dance_wings_and_beak(delta, t)
 	if tail:
 		tail.rotation.x = 0.35 + sin(t * 1.1 + wander_seed * 3.0) * 0.06 + bow_amount * 0.3
 	wake_timer -= delta
@@ -290,3 +305,65 @@ func _watch_baton() -> void:
 	var pitch := atan2(to_tip.y - 0.35, flat.length())
 	neck.rotation.y += clampf(yaw, -WATCH_MAX_YAW, WATCH_MAX_YAW) * _watch_gain
 	neck.rotation.x -= clampf(pitch, -0.5, 0.7) * _watch_gain * 0.6
+	# final guard: the dance layer already moved this, and the sum must stay in
+	# a range a neck can actually reach
+	neck.rotation.x = clampf(neck.rotation.x, neck_rest_rot.x - 0.6, neck_rest_rot.x + 0.85)
+	neck.rotation.y = clampf(neck.rotation.y, -1.3, 1.3)
+
+# ---------------------------------------------------------------- the dance
+
+func _phrase() -> float:
+	# position within a 4-bar phrase, offset per swan so the corps looks
+	# choreographed rather than synchronized
+	return fposmod(main.music.bar_phase() + dance_seed, 1.0)
+
+func _dance_neck(t: float) -> void:
+	# The neck is a swan's whole expression — it should carry the melody. Three
+	# layers: a slow port-de-bras sweep across the phrase, a faster sinuous curl,
+	# and a lift that rides the music's dynamics.
+	var e: float = main.music.energy
+	var ph := _phrase()
+	var sweep := sin(ph * TAU) * (0.16 + e * 0.20)          # side to side, phrase-long
+	var curl := sin(t * 1.7 + dance_seed * TAU) * 0.09      # sinuous S in the neck
+	var lift := (0.10 + e * 0.30) * (0.5 + 0.5 * sin(ph * TAU * 2.0))
+	neck.rotation.y += sweep
+	neck.rotation.x += curl - lift * 0.45
+	# No roll on the neck: rolling while swept put the head upside down. A swan
+	# tips its head by turning, not by rotating its neck about its own axis.
+	# Clamped because _watch_baton() adds on top of this and the two together
+	# were arching the neck right over backwards.
+	neck.rotation.x = clampf(neck.rotation.x, neck_rest_rot.x - 0.55, neck_rest_rot.x + 0.75)
+	neck.rotation.y = clampf(neck.rotation.y, -1.25, 1.25)
+
+func _dance_wings_and_beak(delta: float, t: float) -> void:
+	var e: float = main.music.energy
+	var ph := _phrase()
+	# Wings: held half-open through the phrase like a dancer's arms, opening
+	# further as the music swells, with one wing leading the other (a real corps
+	# never lifts both arms perfectly together).
+	var open := (0.10 + e * 0.85) * (0.45 + 0.55 * sin(ph * TAU))
+	_wing_extra = lerpf(_wing_extra, maxf(open, 0.0), clampf(delta * 3.0, 0.0, 1.0))
+	if wing_l and wing_r:
+		var lead := sin(ph * TAU + 0.6) * 0.18 * (0.3 + e)
+		wing_l.rotation.z += lead
+		wing_r.rotation.z += lead      # same sign = asymmetry, which reads as a gesture
+		# a little forward reach at the top of the phrase
+		var reach := maxf(sin(ph * TAU), 0.0) * (0.10 + e * 0.25)
+		wing_l.rotation.x = -reach
+		wing_r.rotation.x = -reach
+	# Beak: opens on the musical accents — the swans are singing along. Snaps
+	# open, closes slowly, so it reads as articulation rather than chatter.
+	if beak:
+		var accent: float = 1.0 if (main.music.swell_flag or (e > 0.45 and _beat_edge())) else 0.0
+		if accent > 0.0:
+			_beak_open = 1.0
+		_beak_open = maxf(_beak_open - delta * 2.4, 0.0)
+		beak.rotation = beak_rest_rot + Vector3(_beak_open * 0.55, 0, 0)
+
+var _last_beat := 0.0
+
+func _beat_edge() -> bool:
+	var b: float = main.music.beat_phase()
+	var crossed := b < _last_beat   # wrapped past the beat
+	_last_beat = b
+	return crossed

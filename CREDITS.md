@@ -15,3 +15,6 @@
 ## Assets
 
 - Swan model, water/sky shaders, environment: procedural, authored in-repo (Blender headless script + GDScript/Godot shaders). © Agile Lens.
+- Rigged hand mesh (`project/assets/hand_mesh/{Left,Right}HandHumanoid.gltf`, `hand.png`) — from
+  `godotengine/godot-demo-projects`, `xr/openxr_hand_tracking_demo/assets/gltf/`, License **MIT**
+  (Godot Engine contributors). Drives `XRHandModifier3D` for real per-joint hand tracking on Swan.
