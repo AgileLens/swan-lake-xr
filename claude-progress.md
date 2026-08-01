@@ -4,9 +4,44 @@
 Dax (PICO) — must read as more than a tech demo.
 
 **Sessions:** v1 (2026-07-23) → v2/v3 (2026-07-29/30, in-headset feedback
-rounds) → v4 (2026-07-31, overnight beauty pass, alex-mbp).
+rounds) → v4 (2026-07-31, overnight beauty pass, alex-mbp) → v4 live-demo round
+(2026-07-31/08-01, live with Dax, alex-mbp) → **device handed to Jun (PICO),
+distribution now via GitHub Releases.**
 
-## Status — v4 landed, awaiting device verification
+## Status — v4.0 released, physical device no longer with Alex
+
+**Alex no longer has adb access to a Swan headset.** Jun (PICO) has the
+physical unit. Any future updates must ship as a
+[GitHub Release](https://github.com/AgileLens/swan-lake-xr/releases) —
+`out/SwanLake_{pico,quest}.apk` — announced in Slack `#pico-int` via the
+`xoxb` bot token (`chat.postMessage`, posts as "Claude MCP"). **Never use the
+OAuth `slack_send_message` connector for this project** — it posts as Alex's
+own identity, which he explicitly does not want.
+
+Live in-headset session with Dax fixed, same-session: reflections/shadows
+default on, corps 200→800 organic, a 37fps perf regression (leftover
+`Sky.radiance_size` 256 from an abandoned seam-bug hypothesis — reverted,
+100-110fps confirmed), baton flip (pitch clamp reaching -90° — tightened to
+-78), baton grip point (recomputed from hand-generator formulas), hand-tracking
+never engaging (controller-staleness heuristic added), and fireflies rewritten
+as a beat-synced pulsing shader. Diagnosed but NOT fixed in code: "head feels
+3DoF" is an unconfigured Guardian boundary on this physical unit
+(`tracking_6dof_stopped: true` + null boundary in the system log) — needs the
+standard PICO room-scale setup flow run once, not an app change.
+
+**None of the above fixes were verified in-headset before the device left.**
+They're compile-clean / error-free in a simulated OpenXR session only.
+
+Cross-session collaboration with a Fort session (their MetaHuman/Unreal
+companion apps, same physical Swan) found: a Meta-only extension instantiated
+unguarded silently killed their whole face/eye/voice setup chain with no error
+output, and PICO implements face tracking via the HTC OpenXR extension, not
+Meta's. Full writeup: `~/knowledge/intelligence/techniques/pico-openxr-runtime-debugging-patterns.md`.
+Fort's chain-fix APK (`MHSwanLIVE-CHAINFIX-2026-07-31.apk`) was never run
+against a live device — `swan_watch.sh` timed out twice waiting for reconnect
+before Jun took the headset.
+
+## Status — v4 landed, awaiting device verification (superseded above)
 
 - [x] Core experience: water/sky/beam shaders, flock AI, baton conducting,
       gather/finale, moods, weather, swan style ladder, Cygnus puzzle, nest/hatch
