@@ -104,7 +104,7 @@ Desktop look-dev:
 |---|---|
 | ![Dusk fireworks](docs/dusk_fireworks.png) | ![Dawn](docs/dawn_low.png) |
 | ![Swan styles](docs/styles_grid.png) | ![Planar reflections](docs/night_planar.png) |
-| ![Corps de ballet — 2,000 swans](docs/finale_corps_2000.png) | |
+| ![Corps de ballet — 2,000 swans](docs/finale_corps_2000.png) | ![Aurora over the audience](docs/corps_chorus.png) |
 
 ## Credits
 
