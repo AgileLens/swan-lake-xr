@@ -52,6 +52,14 @@ void vertex() {
 		VERTEX.x -= VERTEX.x * wingf * lift * 0.25 * chorus;
 		VERTEX.z -= wingf * lift * 0.10 * chorus;
 	}
+	// Nobody's neck is the same as their neighbor's: bend above the shoulder per instance, with
+	// a slow drift, so the far ranks aren't a row of identical pickets.
+	float nk = smoothstep(0.34, 0.92, VERTEX.y);
+	float lean_x = sin(phase * 3.1 + u_time * 0.21 * rate) * 0.34;
+	float lean_z = sin(phase * 5.3 + u_time * 0.16 * rate) * 0.28 + cos(phase * 2.0) * 0.12;
+	VERTEX.x += nk * nk * lean_x;
+	VERTEX.z += nk * nk * lean_z;
+	VERTEX.y -= nk * nk * (abs(lean_x) + abs(lean_z)) * 0.42;
 	VERTEX.y += bob + VERTEX.x * roll;
 }
 

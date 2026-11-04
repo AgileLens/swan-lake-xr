@@ -151,9 +151,9 @@ func _add_sleeve(root: Node3D, wrist: Vector3) -> void:
 	# moment you see your own arm.
 	var cuff := MeshInstance3D.new()
 	var cm := CylinderMesh.new()
-	cm.top_radius = 0.041
-	cm.bottom_radius = 0.043
-	cm.height = 0.045
+	cm.top_radius = 0.036
+	cm.bottom_radius = 0.038
+	cm.height = 0.04
 	cm.radial_segments = 14
 	cm.rings = 1
 	cuff.mesh = cm
@@ -167,22 +167,22 @@ func _add_sleeve(root: Node3D, wrist: Vector3) -> void:
 	root.add_child(cuff)
 	var coat := MeshInstance3D.new()
 	var sm := CylinderMesh.new()
-	sm.top_radius = 0.047
-	sm.bottom_radius = 0.066
-	sm.height = 0.30
+	sm.top_radius = 0.040
+	sm.bottom_radius = 0.048
+	sm.height = 0.34
 	sm.radial_segments = 14
 	sm.rings = 1
 	sm.cap_bottom = false
 	coat.mesh = sm
 	var black := StandardMaterial3D.new()
-	black.albedo_color = Color(0.022, 0.022, 0.028)
+	black.albedo_color = Color(0.052, 0.052, 0.062)
 	black.roughness = 0.55
 	black.rim_enabled = true
-	black.rim = 0.3
+	black.rim = 0.5
 	coat.material_override = black
 	coat.rotation_degrees = Vector3(90, 0, 0)
 	coat.scale = Vector3(1, 1, 0.82)
-	coat.position = wrist + Vector3(0, 0, 0.175)
+	coat.position = wrist + Vector3(0, 0, 0.195)
 	root.add_child(coat)
 
 func _pose_fingers(skel: Skeleton3D, hand: String, pose: Dictionary, grip: bool) -> void:
@@ -405,6 +405,7 @@ func _desktop_hand() -> void:
 		var basis := Basis.looking_at(to, h.basis.y)
 		# Rolled a little toward thumb-up, the way a wrist rests when conducting.
 		anchor.global_transform = Transform3D(basis.rotated(to, deg_to_rad(28.0)), desktop_tip - to * BATON_LEN)
+		(anchor.get_child(0) as Node3D).rotation = Vector3.ZERO  # the grip tuner is for held controllers
 
 func _show_left_desktop() -> void:
 	# The other hand stays out of frame until asked for, as it usually is on a podium.

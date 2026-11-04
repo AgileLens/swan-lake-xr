@@ -18,7 +18,7 @@ func setup(m) -> void:
 		var p := GPUParticles3D.new()
 		p.one_shot = true
 		p.emitting = false
-		p.amount = 260
+		p.amount = 380
 		p.lifetime = 2.1
 		p.explosiveness = 1.0
 		var pm := ParticleProcessMaterial.new()
@@ -39,7 +39,7 @@ func setup(m) -> void:
 		pm.scale_curve = sc
 		p.process_material = pm
 		var quad := QuadMesh.new()
-		quad.size = Vector2(0.30, 0.30)
+		quad.size = Vector2(0.40, 0.40)
 		var m2 := StandardMaterial3D.new()
 		m2.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m2.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -53,7 +53,7 @@ func setup(m) -> void:
 		grad.gradient = g
 		m2.albedo_texture = grad
 		m2.emission_enabled = true
-		m2.emission_energy_multiplier = 5.5
+		m2.emission_energy_multiplier = 8.0
 		# same soft-particle depth fade as the fireflies — a spark drifting behind
 		# a swan or the dock blends out instead of z-fighting as a hard sprite edge
 		m2.proximity_fade_enabled = true
@@ -68,7 +68,7 @@ func set_palette(colors: Array) -> void:
 
 func launch(at: Vector3) -> void:
 	var start := Vector3(at.x, 0.0, at.z)
-	var apex := Vector3(at.x + randf_range(-1, 1), randf_range(13.0, 22.0), at.z + randf_range(-1, 1))
+	var apex := Vector3(at.x + randf_range(-1, 1), randf_range(11.0, 18.0), at.z + randf_range(-1, 1))
 	var head := MeshInstance3D.new()
 	var sm := SphereMesh.new()
 	sm.radius = 0.09; sm.height = 0.18

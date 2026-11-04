@@ -57,17 +57,18 @@ float hash21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453
 
 void fragment() {
 	vec2 p = v_world.xz;
-	float nx = (cos(p.x * 1.7 + u_time * 0.9) * 0.102
-			  + cos((p.x * 0.6 + p.y * 0.8) * 2.3 + u_time * 1.4) * 0.041
+	// The broad swell is kept low: larger values gave a warped-chrome look with reflections on.
+	float nx = (cos(p.x * 1.7 + u_time * 0.9) * 0.052
+			  + cos((p.x * 0.6 + p.y * 0.8) * 2.3 + u_time * 1.4) * 0.030
 			  + cos(p.x * 5.1 + p.y * 1.3 + u_time * 2.2) * 0.012) * wave_amp;
-	float nz = (cos(p.y * 1.3 + u_time * 0.7) * 0.078
-			  + cos((p.x * 0.6 + p.y * 0.8) * 2.3 + u_time * 1.4) * 0.055
+	float nz = (cos(p.y * 1.3 + u_time * 0.7) * 0.042
+			  + cos((p.x * 0.6 + p.y * 0.8) * 2.3 + u_time * 1.4) * 0.034
 			  + cos(p.y * 4.3 - p.x * 1.1 + u_time * 1.9) * 0.012) * wave_amp;
 	// Fine chop, fading with distance before it can alias. This is what stops water reading as
 	// polished plastic in daylight.
 	float dist_fade = 1.0 / (1.0 + length(v_world - CAMERA_POSITION_WORLD) * 0.14);
-	nx += (cos(p.x * 11.0 + p.y * 7.0 + u_time * 3.1) + cos(p.x * 19.0 - p.y * 13.0 - u_time * 3.9) * 0.6) * 0.0095 * dist_fade * wave_amp;
-	nz += (cos(p.y * 12.0 - p.x * 6.0 + u_time * 2.7) + cos(p.y * 21.0 + p.x * 11.0 + u_time * 3.5) * 0.6) * 0.0095 * dist_fade * wave_amp;
+	nx += (cos(p.x * 11.0 + p.y * 7.0 + u_time * 3.1) + cos(p.x * 19.0 - p.y * 13.0 - u_time * 3.9) * 0.6) * 0.015 * dist_fade * wave_amp;
+	nz += (cos(p.y * 12.0 - p.x * 6.0 + u_time * 2.7) + cos(p.y * 21.0 + p.x * 11.0 + u_time * 3.5) * 0.6) * 0.015 * dist_fade * wave_amp;
 	vec3 rip = ripple_field(p);
 	nx += rip.y * 0.030;
 	nz += rip.z * 0.030;

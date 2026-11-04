@@ -51,19 +51,20 @@ def catmull(table, x):
 
 # y, half width, top z, bottom z
 HULL = [
-    (-0.640, 0.005, 0.300, 0.274),
-    (-0.580, 0.022, 0.296, 0.232),
-    (-0.500, 0.050, 0.296, 0.150),
-    (-0.400, 0.092, 0.312, 0.030),
-    (-0.280, 0.142, 0.342, -0.060),
-    (-0.120, 0.190, 0.366, -0.115),
-    (0.050, 0.205, 0.368, -0.130),
-    (0.200, 0.186, 0.348, -0.120),
-    (0.320, 0.146, 0.320, -0.090),
-    (0.410, 0.092, 0.280, -0.040),
-    (0.465, 0.040, 0.215, 0.020),
-    (0.490, 0.006, 0.150, 0.080),
+    (-0.660, 0.004, 0.292, 0.272),
+    (-0.590, 0.020, 0.280, 0.226),
+    (-0.500, 0.046, 0.276, 0.140),
+    (-0.400, 0.086, 0.288, 0.024),
+    (-0.280, 0.132, 0.312, -0.060),
+    (-0.120, 0.174, 0.334, -0.115),
+    (0.050, 0.188, 0.336, -0.130),
+    (0.200, 0.172, 0.322, -0.120),
+    (0.320, 0.134, 0.298, -0.090),
+    (0.410, 0.086, 0.262, -0.040),
+    (0.470, 0.038, 0.205, 0.020),
+    (0.500, 0.006, 0.150, 0.080),
 ]
+
 def hull_point(y, th, off=0.0, n=2.35):
     """Surface point at station y and angle th (0 top, +pi/2 at +X, pi bottom), offset outward."""
     a, zt, zb = catmull(HULL, y)
@@ -81,16 +82,16 @@ def hull_point(y, th, off=0.0, n=2.35):
 
 # The S of the neck, from inside the chest up to the back of the skull: (arc param, y, z, radius)
 NECK = [
-    (0.00, 0.285, 0.170, 0.098),
-    (0.10, 0.360, 0.270, 0.078),
-    (0.22, 0.408, 0.375, 0.060),
-    (0.34, 0.402, 0.480, 0.047),
-    (0.46, 0.358, 0.575, 0.040),
-    (0.58, 0.318, 0.670, 0.036),
-    (0.70, 0.312, 0.765, 0.034),
-    (0.82, 0.346, 0.845, 0.033),
-    (0.92, 0.396, 0.890, 0.033),
-    (1.00, 0.440, 0.903, 0.034),
+    (0.00, 0.270, 0.150, 0.098),
+    (0.10, 0.362, 0.262, 0.070),
+    (0.22, 0.414, 0.372, 0.050),
+    (0.34, 0.410, 0.480, 0.0405),
+    (0.46, 0.366, 0.578, 0.0345),
+    (0.58, 0.324, 0.674, 0.0310),
+    (0.70, 0.316, 0.770, 0.0295),
+    (0.82, 0.350, 0.850, 0.0290),
+    (0.92, 0.400, 0.894, 0.0295),
+    (1.00, 0.444, 0.906, 0.0310),
 ]
 
 def neck_point(u):
@@ -371,7 +372,7 @@ def spread_feather(root, direction, length, width, tip_round, up, droop=0.0, cup
 
 def wing_batch(side=1.0):
     """Build one wing on the +X side, mirrored when side = -1. Returns (batch, pivot)."""
-    pivot = np.array([0.135, 0.205, 0.335])
+    pivot = np.array([0.120, 0.205, 0.305])
     rng = np.random.default_rng(1234)
     batch = FeatherBatch()
 
@@ -414,7 +415,7 @@ def wing_batch(side=1.0):
             f = k / max(n - 1, 1)
             y0, y1 = y0a + (y0b - y0a) * f, y1a + (y1b - y1a) * f
             t0, t1 = math.radians(th0a + (th0b - th0a) * f), math.radians(th1a + (th1b - th1a) * f)
-            fold = draped_feather(y0, t0, y1, t1, off0 + stack * k * 1.7, off1 + stack * k * 1.7, width, tip, cup=0.34)
+            fold = draped_feather(y0, t0, y1, t1, off0 + stack * k * 1.15, off1 + stack * k * 1.15, width, tip, cup=0.22)
             sl = spread_len if callable(spread_len) is False else spread_len(f)
             dx = dir_x(f) if callable(dir_x) else dir_x
             emit(fold, s_a + (s_b - s_a) * f, back, np.array([dx, -1.0, 0.0]), sl, spread_w, tip, tone, dark, droop)
@@ -451,14 +452,14 @@ def wing_batch(side=1.0):
     return batch, pivot
 
 def tail_batch():
-    pivot = np.array([0.0, -0.42, 0.26])
+    pivot = np.array([0.0, -0.44, 0.235])
     batch = FeatherBatch()
     n = 14
     rng = np.random.default_rng(99)
     for k in range(n):
         f = k / (n - 1) * 2.0 - 1.0
-        L = 0.205 - 0.05 * abs(f)
-        root = np.array([f * 0.052, -0.415, 0.235 + 0.018 * (1.0 - abs(f))])
+        L = 0.215 - 0.05 * abs(f)
+        root = np.array([f * 0.050, -0.44, 0.212 + 0.018 * (1.0 - abs(f))])
         direction = np.array([f * 0.34, -1.0, 0.20 - 0.08 * abs(f)])
         up = np.array([0.0, 0.2, 1.0])
         up = up / np.linalg.norm(up)

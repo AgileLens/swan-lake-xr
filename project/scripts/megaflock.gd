@@ -7,7 +7,8 @@ extends Node
 
 const COUNTS: Array[int] = [0, 200, 800, 2000, 5000]
 const NEAR_COUNT := 150          # instances that use the nicer mesh
-const R_MIN := 17.0              # keep outside the hero flock's roam bounds
+const CLUSTERS := 22
+const R_MIN := 19.0              # keep outside the hero flock's roam bounds
 const R_MAX := 78.0
 # What the audience is watching: the dock, where the conductor stands.
 const STAGE := Vector3(0, 0, 0)
@@ -101,10 +102,14 @@ func _fill(mmi: MultiMeshInstance3D, count: int, seed_off: int) -> void:
 	mmi.multimesh.instance_count = count
 	for i in count:
 		# Never on the near bank: the arc behind the dock is land now.
-		var ang := rng.randf_range(0.95, TAU - 0.95)
-		# near instances hug the inner radius; far ones fill the whole annulus
-		var r := rng.randf_range(R_MIN, R_MIN + 12.0) if seed_off == 0 \
-			else rng.randf_range(R_MIN + 6.0, R_MAX)
+		# Rafts, as real flocks gather, with open water between them.
+		var c: int = rng.randi() % CLUSTERS
+		var ca: float = 0.95 + (TAU - 1.9) * fposmod(float(c) * 0.6180339, 1.0)
+		var cr: float = lerpf(R_MIN + 3.0, R_MAX - 6.0, fposmod(float(c) * 0.7548776, 1.0))
+		if seed_off == 0:
+			cr = minf(cr, R_MIN + 16.0)
+		var ang: float = clampf(ca + rng.randfn(0.0, 3.0 / cr), 0.95, TAU - 0.95)
+		var r: float = clampf(cr + rng.randfn(0.0, 3.2), R_MIN, R_MAX)
 		var drift := rng.randf_range(0.06, 0.16) * (1.0 if rng.randf() > 0.5 else -1.0)
 		_apply_instance(mmi, i, ang, r, drift, rng)
 
@@ -113,10 +118,10 @@ func _apply_instance(mmi: MultiMeshInstance3D, i: int, ang: float, r: float, dri
 	# They're an audience: face the dock, not the direction of travel. A little
 	# jitter so it's a crowd looking at a stage rather than a parade formation.
 	var to_stage: Vector3 = STAGE - pos
-	var jitter := rng.randf_range(-0.25, 0.25)
+	var jitter := rng.randf_range(-0.8, 0.8)  # mostly toward the dock, not parade dress
 	var heading := atan2(to_stage.x, to_stage.z) + jitter
 	var basis := Basis(Vector3.UP, heading)
-	var sc := rng.randf_range(0.85, 1.1)
+	var sc := rng.randf_range(0.80, 1.12)
 	mmi.multimesh.set_instance_transform(i, Transform3D(basis.scaled(Vector3.ONE * sc), pos))
 	# x = bob phase, y = bob rate, z = wave delay by distance from the stage
 	# (so a chorus beat travels outward through the ranks), w = sway scale

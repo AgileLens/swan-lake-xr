@@ -101,7 +101,7 @@ var presets := {
 		"water_base": Color(0.030, 0.050, 0.080), "water_horizon": Color(0.320, 0.240, 0.200),
 		"glint": Color(1.00, 0.80, 0.55), "firefly": Color(1.00, 0.95, 0.80), "accent": Color(1.00, 0.85, 0.60),
 		"beam": Color(1.00, 0.85, 0.65), "fireworks": [Color(1.0, 0.85, 0.6), Color(1.0, 0.6, 0.6), Color(0.95, 0.9, 0.75)],
-		"ambient": 0.75, "sun": 1.0, "reflect": 0.55,
+		"ambient": 0.75, "sun": 1.0, "reflect": 0.40, "swan": 0.92,
 	},
 	"morning": {
 		"cloud_cover": 0.36, "cloud_tint": Color(1.00, 0.99, 0.97), "aurora": 0.0,
@@ -112,7 +112,7 @@ var presets := {
 		"water_base": Color(0.014, 0.075, 0.110), "water_horizon": Color(0.140, 0.300, 0.400),
 		"glint": Color(1.00, 0.97, 0.88), "firefly": Color(1.00, 0.95, 0.80), "accent": Color(1.00, 0.95, 0.75),
 		"beam": Color(1.00, 0.95, 0.80), "fireworks": [Color(1.0, 0.85, 0.5), Color(0.9, 0.5, 0.5), Color(0.5, 0.7, 1.0)],
-		"ambient": 0.72, "sun": 1.0, "reflect": 0.55,
+		"ambient": 0.72, "sun": 1.0, "reflect": 0.36, "swan": 0.84,
 	},
 	"gathering": {
 		"cloud_cover": 0.82, "cloud_tint": Color(0.42, 0.46, 0.52), "aurora": 0.0,
@@ -145,29 +145,29 @@ var presets := {
 		"water_base": Color(0.014, 0.070, 0.095), "water_horizon": Color(0.160, 0.300, 0.360),
 		"glint": Color(1.00, 0.95, 0.80), "firefly": Color(1.00, 0.95, 0.80), "accent": Color(1.00, 0.90, 0.65),
 		"beam": Color(1.00, 0.93, 0.75), "fireworks": [Color(1.0, 0.85, 0.5), Color(0.9, 0.5, 0.5), Color(0.5, 0.7, 1.0)],
-		"ambient": 0.72, "sun": 1.0, "reflect": 0.55,
+		"ambient": 0.72, "sun": 1.0, "reflect": 0.36, "swan": 0.84,
 	},
 	"golden": {
 		"cloud_cover": 0.40, "cloud_tint": Color(1.00, 0.72, 0.46), "aurora": 0.0,
 		"aurora_a": Color(0.60, 0.40, 0.80), "aurora_b": Color(0.90, 0.50, 0.55),
 		"sky_top": Color(0.180, 0.260, 0.480), "sky_horizon": Color(1.00, 0.620, 0.260),
-		"stars": 0.0, "milkyway": 0.0, "moon_color": Color(1.00, 0.70, 0.36), "moon_energy": 1.15,
+		"stars": 0.0, "milkyway": 0.0, "moon_color": Color(1.00, 0.78, 0.52), "moon_energy": 1.05,
 		"moon_dir": Vector3(0.52, 0.17, -0.84), "fog_color": Color(0.780, 0.500, 0.300), "fog_density": 0.0042,
 		"water_base": Color(0.030, 0.038, 0.060), "water_horizon": Color(0.340, 0.210, 0.120),
 		"glint": Color(1.00, 0.74, 0.38), "firefly": Color(1.00, 0.75, 0.40), "accent": Color(1.00, 0.76, 0.42),
 		"beam": Color(1.00, 0.72, 0.42), "fireworks": [Color(1.0, 0.78, 0.35), Color(1.0, 0.5, 0.45), Color(0.95, 0.5, 0.9)],
-		"ambient": 0.72, "sun": 1.0, "reflect": 0.6,
+		"ambient": 0.72, "sun": 1.0, "reflect": 0.42, "swan": 0.92,
 	},
 	"gala": {
 		"cloud_cover": 0.14, "cloud_tint": Color(0.30, 0.36, 0.52), "aurora": 0.40,
 		"aurora_a": Color(0.20, 0.80, 0.75), "aurora_b": Color(0.55, 0.30, 0.95),
 		"sky_top": Color(0.006, 0.010, 0.036), "sky_horizon": Color(0.030, 0.052, 0.120),
-		"stars": 1.15, "milkyway": 1.2, "moon_color": Color(0.98, 0.97, 0.90), "moon_energy": 0.42,
+		"stars": 1.15, "milkyway": 1.2, "moon_color": Color(0.98, 0.97, 0.90), "moon_energy": 0.55,
 		"moon_dir": Vector3(-0.30, 0.34, -0.89), "fog_color": Color(0.014, 0.028, 0.056), "fog_density": 0.009,
 		"water_base": Color(0.008, 0.020, 0.042), "water_horizon": Color(0.040, 0.070, 0.130),
 		"glint": Color(0.85, 0.92, 1.00), "firefly": Color(0.55, 0.85, 1.00), "accent": Color(0.85, 0.95, 1.00),
 		"beam": Color(0.55, 0.75, 1.00), "fireworks": [Color(1.0, 0.82, 0.4), Color(0.95, 0.97, 1.0), Color(0.95, 0.4, 0.5), Color(0.5, 0.75, 1.0)],
-		"ambient": 0.7, "sun": 0.0, "reflect": 0.45,
+		"ambient": 1.0, "sun": 0.0, "reflect": 0.45,
 	},
 }
 
@@ -195,6 +195,11 @@ func apply(name: String, instant: bool, seconds := 2.2) -> void:
 	_star_amount = float(p.stars)
 	_sh(main.sky_mat, "is_sun", float(p.get("sun", 0.0)), dur)
 	_sh(main.water_mat, "reflect_gain", float(p.get("reflect", 0.45)), dur)
+	# White birds clip first in daylight: hold them back so feather shading survives.
+	SwanLook.materials()
+	var swan_gain := float(p.get("swan", 1.0))
+	_sh(SwanLook.body_mat, "exposure", swan_gain, dur)
+	_sh(SwanLook.feather_mat, "exposure", swan_gain, dur)
 	_sh(main.water_mat, "star_sparkle", float(p.stars), dur)
 	_sh(main.sky_mat, "top_color", p.sky_top, dur)
 	_sh(main.sky_mat, "horizon_color", p.sky_horizon, dur)

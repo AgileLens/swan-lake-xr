@@ -1,113 +1,79 @@
-# Swan Lake XR
+# Pico Swan Lake: The Conductor's Program
 
-*Swan Lake, on the Swan.* An immersive twilight-lake vignette built by [Agile Lens](https://agilelens.com) for PICO's next-generation **Swan** headset — and any OpenXR standalone device.
+**An Agile Lens production.** Stand on a dock at the edge of a lake and conduct. A 24 minute program of nine movements runs
+from before dawn to a fireworks finale, played by real recordings, and a flock of swans answers your hand. Each movement has its own hour,
+its own weather and choreography, and its own thing your baton does.
 
-You stand on a wooden dock over a moonlit lake, under a moving sky of drifting clouds and aurora curtains. Swans glide past, leaving real wakes in the water, dancing to the score with their necks, wings, and beaks. Thousands of fireflies drift through the reeds. Tchaikovsky's *Swan Lake* (a verified public-domain recording) swells around you, and your controller — or your bare hand, rendered as a real tracked hand mesh — is a conductor's baton: ripple the water, draw the flock into a moonbeam, light the stars of Cygnus, hatch a cygnet, and end the night with fireworks over the water.
+Built for PICO headsets with Godot 4.7.2 and OpenXR. Works with controllers, bare hands, or a mouse and keyboard on the desktop.
+This is an uplift of [Swan Lake XR](https://github.com/AgileLens/swan-lake-xr), which it keeps the conducting, ripples, gathering,
+Cygnus stars and fireworks from. See [RECEIPT.md](RECEIPT.md) for what has and hasn't been verified, and read it before quoting anything here.
 
-![Swan Lake XR — night gather](docs/night_gather.png)
+## The Program
 
-Built entirely with **Godot 4.7 + the OpenXR Vendors plugin**, 100% procedural assets (Blender-scripted models, synthesized-in-key sound effects, shader water/sky), packaged headlessly on macOS. No engine GUI was opened in the making of this app.
+| | Movement | Music | Staging | Your baton |
+|---|---|---|---|---|
+| | Tuning | Swan Lake theme, synthesized harp and oboe | Before dawn, mist, the flock asleep | Raise it |
+| I | Dawn | Grieg, Morning Mood | Sunrise, mist burning off | Lifts the sun, wakes swans one by one |
+| II | Regatta | Handel, Alla Hornpipe | Bright morning, a breeze | Steers a line of swans across the lake |
+| III | The Storm | Beethoven, Symphony 6, fourth movement | Black cloud, rain | Strike down on the crashes to call lightning |
+| IV | After the Rain | Beethoven, Symphony 6, fifth movement | Clearing sun | Sweep to paint the rainbow |
+| V | The Swan | Saint-Saëns, Le Cygne, 1925 recording | Golden hour into dusk | Long slow lines: she follows you, then the pair's necks form a heart |
+| VI | Moonrise | Smetana, Moonlight from Vltava | Night, aurora, fireflies | Light the stars of Cygnus |
+| VII | Scène | Tchaikovsky, Swan Lake | Moonlight, falling snow | Gather the flock into the moonbeam |
+| VIII | Finale | Tchaikovsky, 1812 Overture, close | Clear night | Every downbeat launches a firework |
 
-## Experience
+The program never waits for you and never scolds you. Off-beat gestures cost nothing, and nobody fails. If you do nothing at all,
+it plays through to the end and the flock still takes a bow. The better you conduct, the more they give back: a nod on the beat, then
+wings raised, a corps that rises, feathers falling, and a bigger barrage at the curtain. After that, stay on the lake as long as you like, or
+call an encore.
 
-- **Real hands.** Put the controllers down and see your actual hand — a real skinned, per-finger-tracked mesh (`XRHandModifier3D`), not a static prop. Pick a controller back up and the conductor's mitten-and-baton returns instantly.
-- **Conduct.** Right trigger ripples the water where you point — the flock banks toward it. Ripple sounds are pitched to B minor and quantized to the music's pulse. The baton's grip angle is tunable in the headset — five presets, plus the right stick to dial it live.
-- **The corps dances too.** Every swan's neck, wings, and beak move to the music's beat — a sweeping port-de-bras, wings that open and lead into a gesture, a beak that opens on the musical accents. Each swan is offset in the phrase, so the flock reads as choreographed, not synchronized.
-- **An audience that sometimes joins in.** The lake's outer swans (up to 5,000 — see Corps below) watch from the shore, facing the dock, until the music swells — then they sway and flap in a wave that travels outward through the ranks, like a crowd singing along.
-- **Fish sing.** Leaping fish play plucked harp notes in B natural minor, walking up the scale as they go, answered an octave down when they re-enter the water. Every note is tuned to within half a cent of the score's key.
-- **Gather.** Hold grip: the swans assemble in a moonbeam (angled from the actual moon), face you, and bow. Hold long enough and the Act 4 finale takes over.
-- **Finale.** Act 4 swells, fireworks bloom over the lake in mood-matched palettes, fish leap in choreography, and the night closes with a title card.
-- **Moods.** Night / Dusk / Dawn — three complete palettes (sky, water, fog, fireflies, firework colors), tweened live.
-- **Weather.** Clear / Snow / Rain / Breeze — rain patters real ripples across the water.
-- **Swan styles.** Four model tiers from flat-shaded origami to layered-feather detailed, hot-swappable at runtime.
-- **Synesthesia.** Thousands of fireflies (up to 2,500, soft-fading as they near geometry) shift color and pattern with your conducting energy and the orchestra's dynamics — the pull toward your baton starts the instant you move it, so it reads as *you* doing it, not ambient sparkle. A Fantasia-style sparkle trail follows your baton, and with hand tracking, pinch modulates the response.
-- **A living sky.** Clouds drift and catch moonlight; aurora curtains ripple with the music.
-- **Easter eggs.** Find and light the seven stars of **Cygnus, the Swan** (each is a chime note in key). Complete the constellation and watch what happens at the nest.
-- **Reflections.** Four water-reflection techniques (analytic / probe / planar / planar stereo) behind a live toggle. Stereo renders a mirrored camera per eye, so reflections sit at the right depth instead of being pasted flat across both.
-- **Corps de ballet.** Fills the outer lake with up to 5,000 additional swans, doubling as the audience/chorus above — two `MultiMeshInstance3D`s (a nicer near mesh, a flat far mesh) keep it at two draw calls total regardless of count. Swells in automatically for the Act 4 finale, and it's the first thing the performance governor sheds if frame rate dips — a direct answer to "can the Swan handle a bazillion swans?"
-- **Performance governor.** Watches frame rate and sheds effects one notch at a time to hold the target — corps size first, then fireflies, then reflections, shadows, sparkles, and MSAA.
+Every recording's rights basis, including the ones rejected and why, is in [CREDITS.md](CREDITS.md).
 
 ## Controls
 
 | Input | Action |
 |---|---|
-| Right trigger | Conduct: ripple burst + attract flock (also taps stars / eggs / menu orbs) |
-| Left trigger | Launch a firework where you point |
-| Either grip (hold) | Gather the flock into the moonbeam |
-| Right A | Cycle mood (Night / Dusk / Dawn) |
-| Right B | Trigger the Act 4 finale |
-| Left X | Cycle weather |
-| Left Y | Settings orbs (swan style, corps size, mood, weather, reflections, shadows, sparkles, baton pose, SFX timing, FPS HUD) |
-| Right stick (menu open) | Fine-tune the baton grip angle — saved between sessions |
+| Your hand, moving | Conducting. A downstroke on the beat counts, whichever input you use |
+| Right trigger or right pinch | Downbeat and ripple. Also taps stars, the nest and the stand's knob |
+| Left trigger or left pinch | Launch a firework where you point |
+| Either grip, or both hands pinched | Gather the flock into the moonbeam |
+| Right B, or the stand's knob twice | Next movement |
+| Right A, left X | Change mood, change weather (after the program, or to experiment) |
+| Left Y | Settings orbs (swan style, crowd size, reflections, shadows, baton pose, FPS HUD) |
 
-Put the controllers down and the piece keeps going on hand tracking alone — the hands and baton follow your real hands, and pinch carries the verbs:
+Desktop: move the mouse to conduct, left click for a downbeat, right drag to look, ENTER for the next movement,
+`G` gather, `K` firework, `SPACE` ripple, `W` weather, `M` settings.
 
-| Bare-hand gesture | Action |
-|---|---|
-| Right pinch | Conduct: ripple + attract the flock |
-| Left pinch | Launch a firework |
-| Both pinch (hold) | Gather the flock into the moonbeam |
-
-Pick a controller back up and it takes over instantly — a tracked controller always wins.
-
-Desktop preview (no headset): mouse-look + `1/2/3` mood, `SPACE` ripple, `G` gather, `F` finale, `K` firework, `W` weather, `R` reflections, `S` swan style, `X` corps size, `B` baton pose, `T` SFX timing, `M` orb menu, `C`/`N` easter-egg cheats, `H` FPS HUD, `P` screenshot.
-
-## Build
-
-Requirements: Godot 4.7.1 + export templates, the godot_openxr_vendors 5.1.0 addon (bundled in `project/addons/`), Android SDK (build-tools 35+), JDK 17. Blender 4/5 and Python 3 + numpy regenerate the assets from `assets_src/` — every model and sound is code.
+## Quickstart
 
 ```bash
-python3 assets_src/make_sfx.py    # re-synthesize the SFX kit (harp, chimes, plops, loops)
+/Users/alex/GH/vibe-lab/picoswanlake/build.sh                    # debug APK at out/picoswanlake.apk
+/Users/alex/GH/vibe-lab/picoswanlake/tools/test.sh               # logic checks, then the program played three ways
+/opt/homebrew/bin/godot --xr-mode off --path /Users/alex/GH/vibe-lab/picoswanlake/project   # desktop preview
+/opt/homebrew/bin/godot --xr-mode off --path /Users/alex/GH/vibe-lab/picoswanlake/project --resolution 640x360 -- --stills   # stills/ at 3840x2160
 ```
+
+To regenerate assets (needs Blender 4.2, ffmpeg and a Python with numpy):
 
 ```bash
-python3 tools/measure_tempo.py project/assets/music/*.ogg    # tempo + beat-grid phase per track
+/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python /Users/alex/GH/vibe-lab/picoswanlake/assets_src/make_swan_hero.py
+/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python /Users/alex/GH/vibe-lab/picoswanlake/assets_src/make_env.py
+python3 /Users/alex/GH/vibe-lab/picoswanlake/tools/fetch_recordings.py
+python3 /Users/alex/GH/vibe-lab/picoswanlake/assets_src/make_prelude.py
+python3 /Users/alex/GH/vibe-lab/picoswanlake/tools/make_program_audio.py
 ```
-
-`measure_tempo.py` reports *ranked* tempo candidates rather than one number: a rubato orchestral recording genuinely supports more than one reading, and the Act II Scène's tempo octave is ambiguous even to two different scoring metrics. Pick the family that matches the score and put it in `music.gd`'s `TRACKS`.
-
-```bash
-./build.sh pico    # → out/SwanLake_pico.apk   (PICO OpenXR loader)
-```
-
-```bash
-./build.sh quest   # → out/SwanLake_quest.apk  (Meta loader, same scene)
-```
-
-Install to a device in developer mode:
-
-```bash
-adb install -r out/SwanLake_pico.apk
-```
-
-Desktop look-dev:
-
-```bash
-<godot-binary> --xr-mode off --path project -- --preview
-```
-
-`--xr-mode off` matters: with the hand-tracking extensions enabled, OpenXR will happily create a real session on a desktop that has an OpenXR runtime installed, starve the frame loop, and bury the log in *"no viewport was marked with use_xr"*.
 
 ## Things to Try
 
-1. **Stand still for a minute at night.** Watch a swan preen, the moon streak breathe with the music, and fireflies drift through the reeds.
-2. **Hold grip until the music changes.** The gather-bow held long enough triggers the finale — fireworks included.
-3. **Look up and trace the Swan.** Seven stars pulse faintly overhead. Light all of Cygnus and follow the shooting star to the nest.
-4. **Open the orbs (left Y) and flip swan styles.** Origami → low-poly → organic → detailed, live, mid-glide.
-5. **Set weather to rain, reflections to planar stereo.** Rain rings on mirror-water at dusk is the screenshot you'll send someone — and in stereo the reflections sit at the right depth.
-6. **Dial in the baton.** Open the orbs, aim at *Baton*, and push the right stick up or down until the wand sits in your hand the way you'd actually hold one. It remembers.
-7. **Push the corps to 5,000.** Open the orbs, aim at *Corps*, and cycle it up. Watch the FPS HUD (also in the orbs) — the performance governor will pull it back down the instant frame rate needs it, so you can't actually break the experience by asking for too many swans.
-
-## Screenshots
-
-| | |
-|---|---|
-| ![Dusk fireworks](docs/dusk_fireworks.png) | ![Dawn](docs/dawn_low.png) |
-| ![Swan styles](docs/styles_grid.png) | ![Planar reflections](docs/night_planar.png) |
-| ![Corps de ballet — 2,000 swans](docs/finale_corps_2000.png) | ![Aurora over the audience](docs/corps_chorus.png) |
+1. **Just watch.** Put the controllers down for the whole Dawn movement. The flock wakes by itself, and the sun comes up anyway.
+2. **In Dawn, hold your baton above your eyes.** Swans wake sooner, and the sun lifts with your hand.
+3. **In The Storm, strike straight down on a crash.** The bolt lands where you're pointing.
+4. **In After the Rain, sweep slowly from far left to far right.** The rainbow fills in behind your hand, and the harp follows.
+5. **In the Finale, beat time hard.** Every downbeat launches from where you aim. Hold on for the cannons at the end, and watch the flock at the curtain.
 
 ## Credits
 
-Music: Tchaikovsky, *Swan Lake* Op. 20 — public-domain recording via Wikimedia Commons (see [CREDITS.md](CREDITS.md)). Engine: Godot (MIT). XR loaders: godot_openxr_vendors (MIT). Hand mesh: `godotengine/godot-demo-projects` (MIT). Everything else: © Agile Lens, released under the [MIT License](LICENSE).
+Music, source and rights: [CREDITS.md](CREDITS.md). Engine: Godot (MIT). XR loaders: godot_openxr_vendors (MIT). Hand mesh:
+`godotengine/godot-demo-projects` (MIT). Everything else is procedural: © Agile Lens, released under the [MIT License](LICENSE).
 
-Built by **Agile Lens** — real-time immersive design, NYC.
+Built by **Agile Lens**: real-time immersive design, NYC.

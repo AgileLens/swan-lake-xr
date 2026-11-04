@@ -18,5 +18,5 @@ void fragment() {
 	SPECULAR = 0.24;
 	RIM = fuzz;
 	RIM_TINT = 0.75;
-	BACKLIGHT = vec3(0.34);
+	BACKLIGHT = vec3(0.14);
 }

@@ -139,6 +139,7 @@ func _build_environment() -> void:
 	env.ambient_light_sky_contribution = 1.0
 	env.ambient_light_energy = 0.7
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_white = 2.2
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 	env.fog_density = 0.012
@@ -146,7 +147,7 @@ func _build_environment() -> void:
 	env.glow_enabled = true
 	env.glow_intensity = 0.45
 	env.glow_bloom = 0.05
-	env.glow_hdr_threshold = 1.05
+	env.glow_hdr_threshold = 1.3
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)

@@ -172,19 +172,19 @@ func _run() -> void:
 		await _save("04_rainbow")
 	if _ok("05_golden_swan"):
 		_stage("cygne", 45.0, "golden", "clear")
-		main.flock.lead_point = Vector3(0.9, 0, -3.6)
+		main.flock.lead_point = Vector3(-0.2, 0, -3.3)
 		await _settle(5.0)
-		_hand(Vector3(0.02, -0.14, -1.05))
-		_aim(eye + Vector3(0, -0.1, 0), Vector3(0.6, 0.55, -3.6), 62.0)
+		_hand(Vector3(0.10, -0.20, -1.03))
+		_aim(eye + Vector3(0, -0.1, 0), Vector3(-0.05, 0.42, -3.3), 52.0)
 		await _settle(0.5)
 		await _save("05_golden_swan")
 	if _ok("06_heart"):
 		_stage("cygne", 120.0, "dusk", "clear")
 		main.flock.set_formation("pair")
-		main.flock.lead_point = Vector3(0.0, 0, -4.6)
+		main.flock.lead_point = Vector3(0.0, 0, -3.9)
 		await _settle(6.0)
-		_hand(Vector3(0.05, -0.18, -1.05))
-		_aim(eye + Vector3(0, -0.25, 0), Vector3(0, 0.5, -4.8), 56.0)
+		_hand(Vector3(0.20, -0.30, -1.00))
+		_aim(eye + Vector3(0, -0.25, 0), Vector3(0, 0.46, -4.0), 44.0)
 		await _settle(0.5)
 		await _save("06_heart")
 	if _ok("07_moonrise"):
@@ -213,12 +213,12 @@ func _run() -> void:
 		main.music.act4_active = true
 		main.megaflock.chorus = 1.0
 		await _settle(4.0)
-		main.fireworks.launch(Vector3(-7, 0, -22))
-		main.fireworks.launch(Vector3(1, 0, -26))
-		main.fireworks.launch(Vector3(7, 0, -20))
+		main.fireworks.set_palette([Color(1.0, 0.82, 0.4), Color(0.95, 0.97, 1.0), Color(0.95, 0.4, 0.5), Color(0.5, 0.75, 1.0)])
+		for x in [-13.0, -6.0, 0.5, 7.0, 13.0]:
+			main.fireworks.launch(Vector3(x, 0, randf_range(-30, -22)))
 		_hand(Vector3(0.02, 0.32, -0.98))
 		await _settle(1.75)
-		_aim(eye, Vector3(0, 2.6, -8.0), 78.0)
+		_aim(eye, Vector3(0, 3.1, -8.0), 80.0)
 		await _settle(0.05)
 		await _save("09_finale")
 	if _ok("10_portrait"):
@@ -228,6 +228,11 @@ func _run() -> void:
 		for o in main.flock.swans:
 			o.global_position = Vector3(40, -5, 40)
 		var s: Swan = main.flock.swans[0]
+		s.flying = false
+		s.flap_phase = -1.0
+		s.tgt_wing = 0.0
+		s.pose_wing = 0.0
+		s._flourish = 0.0
 		s.global_position = Vector3(0, 0, -6.8)
 		s.heading = -PI * 0.58
 		s.rotation = Vector3(0, s.heading, 0)

@@ -15,6 +15,9 @@ static func materials() -> void:
 	feather_mat = ShaderMaterial.new()
 	feather_mat.shader = load("res://shaders/swan_feather.gdshader")
 	feather_mat.set_shader_parameter("detail_tex", load("res://assets/swan/feather_detail.png"))
+	# Set before any tween reads them back: an unset uniform reads as null.
+	body_mat.set_shader_parameter("exposure", 1.0)
+	feather_mat.set_shader_parameter("exposure", 1.0)
 
 static func dress(model: Node) -> void:
 	materials()

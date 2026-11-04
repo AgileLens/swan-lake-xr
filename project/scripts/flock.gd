@@ -40,8 +40,8 @@ func spawn(count: int) -> void:
 		s.setup(main, self, model, float(i) * 1.618)
 		var a := TAU * float(i) / count
 		s.global_position = main.LAKE_CENTER + Vector3(cos(a) * randf_range(3, 7), 0, sin(a) * randf_range(3, 7))
-		if i == 0:
-			s.scale = Vector3.ONE * 1.12  # prima
+		# Real flocks vary. The prima is the largest, and nobody is a copy of anyone else.
+		s.scale = Vector3.ONE * (1.10 if i == 0 else randf_range(0.92, 1.03))
 		swans.append(s)
 
 func spawn_cygnet(at: Vector3) -> void:
@@ -276,7 +276,7 @@ func _formation_tick(delta: float) -> void:
 						# They close to face each other, necks arched. The heart.
 						var center: Vector3 = Vector3(lead_point.x * 0.6, 0, clampf(lead_point.z, -6.2, -4.4))
 						var sgn: float = -1.0 if k == 0 else 1.0
-						s.gather_slot = center + Vector3(sgn * 0.62, 0, 0)
+						s.gather_slot = center + Vector3(sgn * 0.70, 0, 0)
 						s.face_point = center
 						s.tgt_heart = 1.0
 						s.slot_radius = 0.12
