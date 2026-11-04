@@ -11,7 +11,7 @@ Attributed to Agile Lens by request. APK: `out/picoswanlake.apk`, package `com.a
 - **A complete program**: a tuning and eight movements, 24.6 minutes including the short announcements, then a curtain call and a free-play lake with encores.
 - **Different staging and a different baton job per movement**: raise the sun and wake the flock, lead a regatta, strike lightning, paint a rainbow,
   draw long lines for a solo swan, light Cygnus, gather into the moonbeam, launch fireworks on the downbeat. 11 lighting stagings, 5 weather states.
-- **A rebuilt swan**: a lofted hull, a tapered neck on a nine-bone chain, a head with knob, lores, nail and hinged jaw, about 140 real feathers per wing
+- **A rebuilt swan**: a lofted hull, a tapered neck on a nine-bone chain, a head with knob, lores, nail and hinged jaw, about 155 real feathers per wing
   that fold, arch and spread, and a baked normal, occlusion and color atlas. Corps swans are decimated from the same model. The old metaball tiers are gone from the picker; origami stays.
 - **Conducting that's judged kindly**: a real downstroke detector, plus trigger or pinch for anyone who can't or won't wave. Keeping time needs a run of three beats.
   Nothing lowers a grade. Doing nothing still earns the finale and the bow. Swans nod on your beats, and the curtain has four tiers.

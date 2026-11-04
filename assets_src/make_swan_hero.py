@@ -7,7 +7,7 @@
 #     chest keel, a raised back and an upturned pointed tail. It is not a union of spheres.
 #   - The neck is a tapered S with a real head on it: flat crown, cheek, knobbed bill,
 #     black lores and nail. It is a skinned bone chain, so the neck can bend, not swivel.
-#   - The wings are about 120 individual feathers draped over the hull in the same rows a
+#   - The wings are about 155 individual feathers draped over the hull in the same rows a
 #     bird has (primaries, secondaries, tertials, coverts, scapulars). Each has its own
 #     curvature, so its silhouette and shadow come from geometry.
 #   - Body feathering is sculpted into a high-res copy and baked to a normal map. Bill, eye
