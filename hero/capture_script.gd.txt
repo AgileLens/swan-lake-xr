@@ -1,0 +1,239 @@
+extends Node
+# --stills[=name]: hero stills at true 3840x2160 with the Mobile renderer, the real scene and no
+# UI: a SubViewport sharing the game's world. Each shot stages a real movement through the same
+# calls the program uses, then holds the camera where a wearer's eyes would be unless the name
+# says it's a closer look. Output: ../stills/<name>.png. A full run wipes the folder first.
+const W := 3840
+const H := 2160
+var main
+var vp: SubViewport
+var cam: Camera3D
+var out_dir := ""
+var want := ""
+var scale_down := 1
+
+func _perf_probe() -> void:
+	# Engine counters per movement, on the desktop window with default quality. It says how the
+	# scene's load compares with v4's. It says nothing about frame rate on a headset GPU.
+	main.perf.enabled = false
+	main.title.skip_intro()
+	main.title.cards_enabled = false
+	main.music.virtual_clock = true
+	var rig = main.get_node("PreviewRig")
+	rig.position = Vector3(0, 1.72, 0.6)
+	await get_tree().create_timer(1.0).timeout
+	var shots := [["dawn", 80.0, "sunrise", "mist", 1], ["regatta", 30.0, "morning", "breeze", 1], ["storm", 60.0, "storm", "rain", 1],
+		["clearing", 60.0, "clearing", "clear", 1], ["cygne", 60.0, "golden", "clear", 1], ["moonlight", 60.0, "night", "clear", 1],
+		["scene", 60.0, "night", "snow", 1], ["finale", 190.0, "gala", "clear", 2]]
+	for p in shots:
+		_stage(p[0], p[1], p[2], p[3])
+		main.megaflock.request_level(p[4])
+		await _settle(4.0)
+		main.conductor.desktop_tip = main.head_transform().origin + Vector3(0.05, -0.1, -1.0)
+		var sum := 0.0
+		for i in 60:
+			await get_tree().process_frame
+			sum += get_process_delta_time()
+		print("[perf] %s draws=%d prims=%d objects=%d frame_ms=%.1f vram=%.0fMB" % [p[0],
+			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+			Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
+			Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
+			sum / 60.0 * 1000.0, Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0])
+	print("PERF_DONE")
+	get_tree().quit()
+
+func setup(m) -> void:
+	main = m
+	if "--perf" in OS.get_cmdline_user_args():
+		_perf_probe()
+		return
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--stills="):
+			want = a.substr(9)
+		if a == "--draft":
+			scale_down = 3
+		if a.begins_with("--out="):
+			out_dir = a.substr(6)
+	if out_dir == "":
+		out_dir = ProjectSettings.globalize_path("res://../stills")
+	DirAccess.make_dir_recursive_absolute(out_dir)
+	if want == "":
+		for f in DirAccess.get_files_at(out_dir):
+			DirAccess.remove_absolute(out_dir.path_join(f))
+	vp = SubViewport.new()
+	vp.size = Vector2i(W / scale_down, H / scale_down)
+	vp.msaa_3d = Viewport.MSAA_4X
+	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	vp.world_3d = main.get_viewport().find_world_3d()
+	vp.mesh_lod_threshold = 0.5
+	add_child(vp)
+	cam = Camera3D.new()
+	cam.near = 0.02
+	cam.far = 1000.0
+	vp.add_child(cam)
+	cam.make_current()
+	main.perf.enabled = false
+	main.title.skip_intro()
+	# No text or UI in hero stills.
+	main.stand.root.visible = false
+	main.title.cards_enabled = false
+	main.music.virtual_clock = true
+	_run()
+
+func _ok(n: String) -> bool:
+	return want == "" or want == n or n.begins_with(want)
+
+func _aim(pos: Vector3, target: Vector3, fov: float) -> void:
+	cam.fov = fov
+	cam.global_position = pos
+	cam.look_at(target, Vector3.UP)
+	main.reflections.override_eye = cam.global_transform
+
+func _save(n: String) -> void:
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var img := vp.get_texture().get_image()
+	img.save_png(out_dir.path_join(n + ".png"))
+	print("[still] ", n, " ", img.get_width(), "x", img.get_height(), " draws=",
+		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), " prims=",
+		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
+
+func _stage(id: String, at: float, mood: String, weather := "clear") -> void:
+	# Enter a movement at a given point in its music, via the real program path.
+	var prog = main.program
+	prog._begin(ProgramData.index_of(id))
+	prog.state = ConductorsProgram.State.PLAY
+	main.music.play_clip(prog.movement["clip"], 0.0, at)
+	# Cues up to this point fire, as they would have by now.
+	prog._cue_i = 0
+	prog._run_cues(at)
+	main.mood.apply(mood, true)
+	main.weather.set_weather(weather)
+
+func _settle(sec: float, baton := Vector3.INF) -> void:
+	var t := 0.0
+	while t < sec:
+		await get_tree().process_frame
+		var dt := get_process_delta_time()
+		t += dt
+		main.flock.snap = t < sec * 0.5
+		if baton != Vector3.INF:
+			main.conductor.desktop_tip = main.head_transform().origin + baton
+	main.flock.snap = false
+
+func _hand(offset: Vector3) -> void:
+	# The conductor's baton, in view where it would be: low, right of center, aimed out.
+	main.conductor.desktop_tip = main.head_transform().origin + offset
+
+
+var hero_slots := {}   # Swan -> Vector3
+
+const V_SLOTS := [[-0.05, -3.95, 0.30], [-1.25, -4.55, 0.52], [-2.75, -5.6, 0.22], [-3.05, -7.3, 0.62], [-1.9, -8.8, 0.26], [-0.1, -9.9, 0.66], [1.8, -11.2, 0.3], [3.8, -13.0, 0.6]]
+
+func _arc(_n: int, _cx: float, _cz: float, _r: float, _span: float, tip: Vector3) -> void:
+	# Hero staging: the real flock on a chevron with the prima in front, every body turned to the baton.
+	main.flock.set_formation("free")
+	main.flock.gather_on = false
+	var k := 0
+	for s in main.flock.swans:
+		if s.is_cygnet or s.flying or k >= V_SLOTS.size():
+			continue
+		var v: Array = V_SLOTS[k]
+		s.gather_slot = Vector3(v[0], 0, v[1])
+		s.face_point = tip
+		s.slot_radius = 0.1
+		s.tgt_tall = 0.75
+		s.tgt_sleep = 0.0
+		s.pose_sleep = 0.0
+		s.want_bow = false
+		s.tgt_wing = v[2]
+		k += 1
+
+func _sweep(tip: Vector3, sec: float, amp: Vector3) -> void:
+	# A real downstroke through the desktop baton, so sparkles and energy come from the live code.
+	var t := 0.0
+	while t < sec:
+		await get_tree().process_frame
+		var dt := get_process_delta_time()
+		t += dt
+		var ph := clampf(t / sec, 0.0, 1.0)
+		main.conductor.desktop_tip = main.head_transform().origin + tip + amp * (1.0 - ph)
+
+func _xf(pos: Vector3, dir: Vector3, roll_deg: float) -> Transform3D:
+	var b := Basis.looking_at(dir.normalized(), Vector3.UP)
+	return Transform3D(b.rotated(dir.normalized(), deg_to_rad(roll_deg)), pos)
+
+var hero_face := Vector3.INF
+
+func _hold_heads(sec: float) -> void:
+	# Bodies stay turned to the baton while the live code runs the neck and wing animation.
+	var t := 0.0
+	while t < sec:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+		main.flock.snap = true
+		for s in main.flock.swans:
+			var d: Vector3 = hero_face - s.global_position
+			s.heading = atan2(-d.x, -d.z)
+			s.rotation = Vector3(0, s.heading, 0)
+
+func _hold_line(sec: float, sweep: bool) -> void:
+	# Bodies stay on the curve, each turned to the swan ahead, the lead turned to the baton.
+	var t := 0.0
+	var base: Transform3D = main.conductor.cap_hands["right"]
+	var live: Array = []
+	for s in main.flock.swans:
+		if not s.is_cygnet and not s.flying:
+			live.append(s)
+	while t < sec:
+		await get_tree().process_frame
+		var dt := get_process_delta_time()
+		t += dt
+		main.flock.snap = true
+		for k in live.size():
+			var s: Swan = live[k]
+			var to: Vector3 = hero_face if k == 0 else (live[k - 1].global_position as Vector3)
+			var d: Vector3 = to - s.global_position
+			s.heading = atan2(-d.x, -d.z)
+			s.rotation = Vector3(0, s.heading, 0)
+		if sweep:
+			var ph := clampf(t / sec, 0.0, 1.0)
+			var m := base
+			m.origin = base.origin + Vector3(-0.22, 0.10, 0.0) * (1.0 - ph)
+			main.conductor.cap_hands["right"] = m
+			main.conductor.sparkles.emitting = true
+	main.conductor.cap_hands["right"] = base
+
+func _run() -> void:
+	await get_tree().create_timer(1.0).timeout
+	var rig = main.get_node("PreviewRig")
+	var shots := {"a": ["morning", "regatta"]}
+	for key in shots:
+		if want != "" and not want.ends_with(key):
+			continue
+		var eye := Vector3(0, 1.5, -0.6)
+		rig.position = eye
+		_stage(shots[key][1], 40.0, shots[key][0], "clear")
+		main.megaflock.request_level(0)
+		main.beam_alpha = 0.0
+		_aim(eye, Vector3(0.0, 0.55, -8.0), 54.0)
+		main.conductor.cap_cam = cam
+		main.conductor.cap_hands = {
+			"right": _xf(Vector3(0.40, -0.335, -0.98), Vector3(-0.30, 0.34, -0.72), 30.0),
+			"left": _xf(Vector3(-0.56, -0.325, -1.02), Vector3(0.30, 0.75, -0.5), -35.0),
+		}
+		await get_tree().process_frame
+		var tip: Vector3 = main.conductor.desktop_tip
+		hero_face = Vector3(tip.x, 0, tip.z)
+		_arc(8, 0.0, -1.2, 5.0, 0.58, tip)
+		for s in main.flock.swans:
+			s.tgt_tall = 0.5
+		await _settle(5.0)
+		main.program.set_process(false)
+		await _hold_line(2.0, false)
+		main.ripples.add(Vector3(-0.05, 0, -3.95), 0.8)
+		await _hold_line(0.75, true)
+		await _save("try_" + key)
+	print("STILLS_DONE")
+	get_tree().quit()

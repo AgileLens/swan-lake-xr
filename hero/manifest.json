@@ -1,0 +1,38 @@
+{
+ "app": "picoswanlake",
+ "repo_head": "326efa7bd7e349a23e7542249c01a9944c167e41",
+ "branch": "conductors-program",
+ "render": "Godot 4.7.2 Mobile renderer, desktop capture on a Mac (M1 Max, Metal) in a SubViewport at true 3840x2160. No compositing, painting, upscaling, post-processing or AI pixels outside the engine. Not a headset or passthrough capture.",
+ "staging": [
+  "Capture-only camera, standing on the water past the dock's end, not the wearer's dock position (r1 eye y 1.85 m, z -1.0).",
+  "All 8 flock swans placed by script on marks (flock.snap), bodies forced to face the baton tip, wing poses set per swan.",
+  "STAGED HAND POSE: both hands set by a camera-relative transform in the capture copy of conductor.gd. On desktop the app normally shows only the right hand, on the mouse. The left hand is the app's own unused left glove, shown open. Finger poses are the app's own. Not tracked hands.",
+  "r1: sun lifted by setting sun_nudge to 1, the app's real raised-baton mechanic. r2 and r3: program processing frozen for the frame.",
+  "Megaflock (distant corps) off; music stand hidden; title cards off; performance governor off.",
+  "Two ripples or one spawned by script through the real ripples.add call."
+ ],
+ "capture_script": "hero/capture_script.gd.txt (copy of the scratch capture script; the working copy is .scratch/capture/)",
+ "images": [
+  {
+   "file": "hero_r1.png",
+   "sha256": "f350eb3413f7180f23d7e5d820ef1c7a878f34dfdc9cac4fba19232e982d531f",
+   "note": "Dawn movement, sunrise mood, clear weather. Sunrise fog 0.0034: this change is now in the app (commit in this repo), the frame was rendered from a scratch copy carrying the same value."
+  },
+  {
+   "file": "hero_r2.png",
+   "sha256": "3c2810df69873ce1e8c7a3782a6a9a1fdcb95435e5b3562d6049163459d8e31c",
+   "note": "Same state as r1, closer camera, swans on an orchestra arc. Same fog value."
+  },
+  {
+   "file": "hero_r3.png",
+   "sha256": "159d867e7caf692f07b0bbb3641d8ad737ad69a0a9a3dcb3cf48cbda78a6a702",
+   "note": "Regatta movement, morning mood, clear weather. Swans on an S-curve leading to the baton; sparkles forced on during a scripted baton sweep."
+  }
+ ],
+ "apk_after_visual_change": {
+  "path": "out/picoswanlake.apk",
+  "sha256": "2df34cc44cf0f8db6dff2d0d07a42060ee9d9130a67590c89dd4594693fbb868",
+  "check_apk": "exit 0",
+  "note": "versionCode unchanged at 500"
+ }
+}
