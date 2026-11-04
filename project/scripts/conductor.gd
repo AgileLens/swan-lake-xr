@@ -42,7 +42,6 @@ var mitten := {}         # hand -> Node3D (the procedural hands.glb instance)
 
 func setup(m) -> void:
 	main = m
-	var hands: PackedScene = load("res://assets/hands.glb")
 	# Anchored in world space and driven from HandInput each frame rather than
 	# parented to the controller, so the same rig serves controllers and bare
 	# hands. Each anchor hides itself when its hand isn't tracked — the same
@@ -53,16 +52,7 @@ func setup(m) -> void:
 		anchor.name = "HandAnchor_%s" % hand
 		anchor.visible = false
 		main.add_child(anchor)
-		var inst: Node3D = hands.instantiate()
-		var hl: Node3D = inst.find_child("HandL", true, false)
-		var hr: Node3D = inst.find_child("HandR", true, false)
-		if hand == "left":
-			if hr: hr.visible = false
-		else:
-			if hl: hl.visible = false
-			if hr: hr.position = Vector3.ZERO
-		inst.position = Vector3(0, -0.01, 0.02)
-		anchor.add_child(inst)
+		var inst: Node3D = _make_glove(hand, anchor)
 		anchors[hand] = anchor
 		hand_instances.append(inst)
 		mitten[hand] = inst
@@ -118,6 +108,145 @@ func setup(m) -> void:
 	tip_light.shadow_enabled = false
 	main.add_child(tip_light)
 
+# ---------------------------------------------------------------- the white glove
+# A conductor's white glove, a real rigged hand posed around a real baton. It replaces the old
+# procedural mitten, which was a stack of balloons in the bottom of everyone's view.
+const FINGER_POSES := {
+	# bone suffix -> bend (radians) about the finger's own hinge
+	"baton": {"Index": [0.42, 0.52, 0.32], "Middle": [0.62, 0.72, 0.42], "Ring": [0.74, 0.82, 0.50], "Little": [0.80, 0.86, 0.52]},
+	"open": {"Index": [0.16, 0.22, 0.14], "Middle": [0.22, 0.28, 0.16], "Ring": [0.28, 0.32, 0.18], "Little": [0.34, 0.36, 0.20]},
+}
+const GRIP := Vector3(0.012, 0.030, 0.125)  # the wrist, placed so thumb and index meet at the cork
+const BATON_LEN := 0.37
+
+var baton_tip: Node3D
+
+func _make_glove(hand: String, anchor: Node3D) -> Node3D:
+	var root := Node3D.new()
+	# Into the tree before posing: a skeleton out of the tree drops poses set on it.
+	anchor.add_child(root)
+	var scene: PackedScene = load(HAND_SCENES[hand])
+	var inst: Node3D = scene.instantiate()
+	inst.position = GRIP
+	root.add_child(inst)
+	_add_sleeve(root, GRIP)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.93, 0.92, 0.89)
+	mat.roughness = 0.72
+	mat.rim_enabled = true
+	mat.rim = 0.4
+	mat.rim_tint = 0.6
+	var mi := inst.find_child("*Mesh*", true, false) as MeshInstance3D
+	if mi:
+		mi.material_override = mat
+	var skel: Skeleton3D = inst.find_child("Skeleton3D", true, false)
+	if skel:
+		_pose_fingers(skel, hand, FINGER_POSES["baton"] if hand == "right" else FINGER_POSES["open"], hand == "right")
+	if hand == "right":
+		_add_baton(root)
+	return root
+
+func _add_sleeve(root: Node3D, wrist: Vector3) -> void:
+	# A white shirt cuff and a tailcoat sleeve. It closes the wrist, and it says "conductor" the
+	# moment you see your own arm.
+	var cuff := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.041
+	cm.bottom_radius = 0.043
+	cm.height = 0.045
+	cm.radial_segments = 14
+	cm.rings = 1
+	cuff.mesh = cm
+	var white := StandardMaterial3D.new()
+	white.albedo_color = Color(0.92, 0.91, 0.88)
+	white.roughness = 0.6
+	cuff.material_override = white
+	cuff.rotation_degrees = Vector3(90, 0, 0)
+	cuff.scale = Vector3(1, 1, 0.82)
+	cuff.position = wrist + Vector3(0, 0, 0.012)
+	root.add_child(cuff)
+	var coat := MeshInstance3D.new()
+	var sm := CylinderMesh.new()
+	sm.top_radius = 0.047
+	sm.bottom_radius = 0.066
+	sm.height = 0.30
+	sm.radial_segments = 14
+	sm.rings = 1
+	sm.cap_bottom = false
+	coat.mesh = sm
+	var black := StandardMaterial3D.new()
+	black.albedo_color = Color(0.022, 0.022, 0.028)
+	black.roughness = 0.55
+	black.rim_enabled = true
+	black.rim = 0.3
+	coat.material_override = black
+	coat.rotation_degrees = Vector3(90, 0, 0)
+	coat.scale = Vector3(1, 1, 0.82)
+	coat.position = wrist + Vector3(0, 0, 0.175)
+	root.add_child(coat)
+
+func _pose_fingers(skel: Skeleton3D, hand: String, pose: Dictionary, grip: bool) -> void:
+	var side := "Right" if hand == "right" else "Left"
+	for finger in pose:
+		var bends: Array = pose[finger]
+		var parts := ["Proximal", "Intermediate", "Distal"]
+		for i in 3:
+			var b := skel.find_bone(side + finger + parts[i])
+			if b < 0:
+				continue
+			# Curl about the hand's own side axis, whatever axis the bone's rest happens to use.
+			var inv := skel.get_bone_global_rest(b).basis.orthonormalized().inverse()
+			var axis := (inv * Vector3.RIGHT).normalized()
+			skel.set_bone_pose_rotation(b, skel.get_bone_rest(b).basis.get_rotation_quaternion() * Quaternion(axis, -float(bends[i])))
+	# Thumb opposes the index, pinching the baton's cork.
+	if grip:
+		for pair in [["ThumbMetacarpal", 0.42, -0.25], ["ThumbProximal", 0.30, 0.0], ["ThumbDistal", 0.42, 0.0]]:
+			var b := skel.find_bone(side + str(pair[0]))
+			if b < 0:
+				continue
+			var inv := skel.get_bone_global_rest(b).basis.orthonormalized().inverse()
+			var ax := (inv * Vector3.FORWARD).normalized()
+			var ay := (inv * Vector3.UP).normalized()
+			skel.set_bone_pose_rotation(b, skel.get_bone_rest(b).basis.get_rotation_quaternion()
+				* Quaternion(ay, float(pair[2])) * Quaternion(ax, -float(pair[1])))
+
+func _add_baton(root: Node3D) -> void:
+	var shaft := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.0016
+	cm.bottom_radius = 0.0042
+	cm.height = BATON_LEN
+	cm.radial_segments = 8
+	cm.rings = 1
+	shaft.mesh = cm
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.95, 0.94, 0.90)
+	wood.roughness = 0.38
+	wood.emission_enabled = true
+	wood.emission = Color(0.95, 0.94, 0.90)
+	wood.emission_energy_multiplier = 0.25  # stays readable against a night sky
+	shaft.material_override = wood
+	shaft.rotation_degrees = Vector3(-90, 0, 0)
+	shaft.position = Vector3(0, 0, -BATON_LEN * 0.5)
+	root.add_child(shaft)
+	var cork := MeshInstance3D.new()
+	var bm := SphereMesh.new()
+	bm.radius = 0.012
+	bm.height = 0.034
+	bm.radial_segments = 10
+	bm.rings = 5
+	cork.mesh = bm
+	var cm2 := StandardMaterial3D.new()
+	cm2.albedo_color = Color(0.46, 0.31, 0.18)
+	cm2.roughness = 0.8
+	cork.material_override = cm2
+	cork.rotation_degrees = Vector3(90, 0, 0)
+	cork.position = Vector3(0, 0, 0.012)
+	root.add_child(cork)
+	baton_tip = Node3D.new()
+	baton_tip.position = Vector3(0, 0, -BATON_LEN)
+	root.add_child(baton_tip)
+
 const HAND_SCENES := {
 	"left": "res://assets/hand_mesh/LeftHandHumanoid.gltf",
 	"right": "res://assets/hand_mesh/RightHandHumanoid.gltf",
@@ -168,9 +297,11 @@ func tip_position() -> Vector3:
 		return desktop_tip
 	if main.hand_input and main.hand_input.active("right"):
 		var t: Transform3D = main.hand_input.pose("right")
-		# a bare finger has no baton in it — shorten the reach to the fingertip
-		var reach: float = 0.30 if not main.hand_input.bare("right") else 0.05
-		return t.origin + (-t.basis.z) * reach
+		# A bare finger has no baton in it: the conducting point is the fingertip. With a
+		# controller, it's the actual tip of the actual baton you can see.
+		if main.hand_input.bare("right") or baton_tip == null or not baton_tip.is_inside_tree():
+			return t.origin + (-t.basis.z) * 0.05
+		return baton_tip.global_position
 	return Vector3.ZERO
 
 func set_sparkle_level(lv: int) -> void:
@@ -266,18 +397,26 @@ func _desktop_hand() -> void:
 	var live := desktop_tip != Vector3.ZERO
 	anchor.visible = live
 	if live:
-		var head: Vector3 = main.head_transform().origin
-		var to := (desktop_tip - head).normalized()
-		var basis := Basis.looking_at(to, Vector3.UP)
-		anchor.global_transform = Transform3D(basis, desktop_tip - to * 0.30)
-		var inst: Node3D = anchor.get_child(0)
-		inst.rotation_degrees = Vector3(effective_pitch() * 0.0, 0, 0)
+		var h: Transform3D = main.head_transform()
+		# Held the way a conductor holds it: out from a hand at the right of the body, not
+		# along the line of sight, so a viewer can see the whole baton.
+		var shoulder: Vector3 = h.origin + h.basis.x * 0.26 - h.basis.y * 0.46 + (-h.basis.z) * 0.10
+		var to := (desktop_tip - shoulder).normalized()
+		var basis := Basis.looking_at(to, h.basis.y)
+		# Rolled a little toward thumb-up, the way a wrist rests when conducting.
+		anchor.global_transform = Transform3D(basis.rotated(to, deg_to_rad(28.0)), desktop_tip - to * BATON_LEN)
+
+func _show_left_desktop() -> void:
+	# The other hand stays out of frame until asked for, as it usually is on a podium.
+	var a: Node3D = anchors["left"]
+	a.visible = false
 
 func _process(delta: float) -> void:
 	if main.hand_input == null:
 		return
 	if not main.xr_active:
 		_desktop_hand()
+		_show_left_desktop()
 		var dtip := tip_position()
 		if dtip != Vector3.ZERO:
 			var dspeed := (dtip - _prev_tip).length() / maxf(delta, 0.001)

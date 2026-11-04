@@ -63,6 +63,11 @@ void fragment() {
 	float nz = (cos(p.y * 1.3 + u_time * 0.7) * 0.078
 			  + cos((p.x * 0.6 + p.y * 0.8) * 2.3 + u_time * 1.4) * 0.055
 			  + cos(p.y * 4.3 - p.x * 1.1 + u_time * 1.9) * 0.012) * wave_amp;
+	// Fine chop, fading with distance before it can alias. This is what stops water reading as
+	// polished plastic in daylight.
+	float dist_fade = 1.0 / (1.0 + length(v_world - CAMERA_POSITION_WORLD) * 0.14);
+	nx += (cos(p.x * 11.0 + p.y * 7.0 + u_time * 3.1) + cos(p.x * 19.0 - p.y * 13.0 - u_time * 3.9) * 0.6) * 0.0095 * dist_fade * wave_amp;
+	nz += (cos(p.y * 12.0 - p.x * 6.0 + u_time * 2.7) + cos(p.y * 21.0 + p.x * 11.0 + u_time * 3.5) * 0.6) * 0.0095 * dist_fade * wave_amp;
 	vec3 rip = ripple_field(p);
 	nx += rip.y * 0.030;
 	nz += rip.z * 0.030;
@@ -104,9 +109,13 @@ void fragment() {
 			ruv += vec2(nx, nz) * 0.12;
 			// Clamp, don't cut: a hard test here drew the mirror camera's frustum on the water as
 			// a sharp bright edge whenever the sky was brighter than the water's base color.
+			vec2 edge = smoothstep(vec2(0.0), vec2(0.07), ruv) * smoothstep(vec2(0.0), vec2(0.07), 1.0 - ruv);
+			float inside = edge.x * edge.y;
 			ruv = clamp(ruv, vec2(0.002), vec2(0.998));
 			vec2 fuv = vec2(ruv.x, 1.0 - ruv.y);
 			vec3 pc = right ? texture(planar_tex_r, fuv).rgb : texture(planar_tex, fuv).rgb;
+			// Past the mirror camera's frame, fade to the sky's own color rather than show an edge.
+			pc = mix(horizon_color * 1.6, pc, inside);
 			emis += pc * fres * reflect_gain;
 		}
 	}

@@ -120,9 +120,11 @@ func skip_intro() -> void:
 		fade_mat.albedo_color.a = 0.0
 		_dissolve_intro()
 
+var cards_enabled := true
+
 func movement_card(m: Dictionary) -> void:
 	# A title on the air over the lake, then gone. The stand keeps the details.
-	if m["numeral"] == "":
+	if m["numeral"] == "" or not cards_enabled:
 		return
 	var root := Node3D.new()
 	root.position = Vector3(0, 2.45, -7.5)

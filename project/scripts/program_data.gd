@@ -22,7 +22,7 @@ const MOVEMENTS := [
 		"verb": "raise", "hint": "Lift the sun with your baton. Each high gesture wakes a swan.",
 		"formation": "sleep",
 		"cues": [
-			{"at": 0.0, "mood": "dawn", "dur": 50.0},
+			{"at": 0.0, "mood": "dawn", "dur": 50.0}, {"at": 0.0, "corps": 1},
 			{"at": 75.0, "mood": "sunrise", "dur": 70.0},
 			{"at": 150.0, "weather": "clear"},
 			{"at": 170.0, "mood": "morning", "dur": 50.0},
@@ -69,7 +69,7 @@ const MOVEMENTS := [
 		"performer": "Musopen Symphony (Czech National Symphony Orchestra)", "source": "Wikimedia Commons, Musopen public domain dedication",
 		"verb": "stars", "hint": "Point your baton at the bright stars of the Swan and tap to light them.",
 		"formation": "ring",
-		"cues": [{"at": 0.0, "mood": "night", "dur": 14.0}],
+		"cues": [{"at": 0.0, "mood": "night", "dur": 14.0}, {"at": 0.0, "corps": 2}],
 	},
 	{
 		"id": "scene", "clip": "scene", "numeral": "VII", "title": "Scène",
@@ -86,7 +86,7 @@ const MOVEMENTS := [
 		"verb": "launch", "hint": "Every downbeat launches a firework where you point. Give it everything!",
 		"formation": "corps",
 		"cues": [
-			{"at": 0.0, "mood": "gala", "dur": 5.0}, {"at": 0.0, "weather": "clear"}, {"at": 0.0, "finale": true},
+			{"at": 0.0, "mood": "gala", "dur": 5.0}, {"at": 0.0, "weather": "clear"}, {"at": 0.0, "corps": 3}, {"at": 0.0, "finale": true},
 			{"at": 44.0, "flyby": 2}, {"at": 130.0, "flyby": 3}, {"at": 196.0, "show": "climax"},
 		],
 	},

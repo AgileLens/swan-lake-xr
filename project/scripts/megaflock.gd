@@ -8,7 +8,7 @@ extends Node
 const COUNTS: Array[int] = [0, 200, 800, 2000, 5000]
 const NEAR_COUNT := 150          # instances that use the nicer mesh
 const R_MIN := 17.0              # keep outside the hero flock's roam bounds
-const R_MAX := 58.0
+const R_MAX := 78.0
 # What the audience is watching: the dock, where the conductor stands.
 const STAGE := Vector3(0, 0, 0)
 # How strongly the music has to swell before the audience joins in as a chorus.
@@ -41,7 +41,7 @@ func setup(m) -> void:
 	# Audience visible from first launch — the audience/chorus work is
 	# otherwise invisible unless someone opens the orb menu, which a demo guest
 	# won't know to do. The governor can still shed it under load.
-	set_level(2)
+	set_level(1)
 
 func _make_mmi(glb: String) -> MultiMeshInstance3D:
 	var scene: PackedScene = load(glb)
@@ -70,6 +70,12 @@ func _bake(node: Node, root_inv: Transform3D, st: SurfaceTool) -> void:
 	for c in node.get_children():
 		_bake(c, root_inv, st)
 
+# The program asks for a crowd size; the performance governor caps what it can have.
+var max_level := COUNTS.size() - 1
+
+func request_level(lv: int) -> void:
+	set_level(mini(lv, max_level))
+
 func level_name() -> String:
 	return "off" if COUNTS[level] == 0 else str(COUNTS[level])
 
@@ -92,7 +98,8 @@ func _fill(mmi: MultiMeshInstance3D, count: int, seed_off: int) -> void:
 	rng.seed = 1234 + seed_off
 	mmi.multimesh.instance_count = count
 	for i in count:
-		var ang := rng.randf_range(0.0, TAU)
+		# Never on the near bank: the arc behind the dock is land now.
+		var ang := rng.randf_range(0.95, TAU - 0.95)
 		# near instances hug the inner radius; far ones fill the whole annulus
 		var r := rng.randf_range(R_MIN, R_MIN + 12.0) if seed_off == 0 \
 			else rng.randf_range(R_MIN + 6.0, R_MAX)

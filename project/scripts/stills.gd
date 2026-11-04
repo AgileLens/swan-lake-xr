@@ -12,8 +12,41 @@ var out_dir := ""
 var want := ""
 var scale_down := 1
 
+func _perf_probe() -> void:
+	# Engine counters per movement, on the desktop window with default quality. It says how the
+	# scene's load compares with v4's. It says nothing about frame rate on a headset GPU.
+	main.perf.enabled = false
+	main.title.skip_intro()
+	main.title.cards_enabled = false
+	main.music.virtual_clock = true
+	var rig = main.get_node("PreviewRig")
+	rig.position = Vector3(0, 1.72, 0.6)
+	await get_tree().create_timer(1.0).timeout
+	var shots := [["dawn", 80.0, "sunrise", "mist", 1], ["regatta", 30.0, "morning", "breeze", 1], ["storm", 60.0, "storm", "rain", 1],
+		["clearing", 60.0, "clearing", "clear", 1], ["cygne", 60.0, "golden", "clear", 1], ["moonlight", 60.0, "night", "clear", 2],
+		["scene", 60.0, "night", "snow", 2], ["finale", 190.0, "gala", "clear", 3]]
+	for p in shots:
+		_stage(p[0], p[1], p[2], p[3])
+		main.megaflock.request_level(p[4])
+		await _settle(4.0)
+		main.conductor.desktop_tip = main.head_transform().origin + Vector3(0.05, -0.1, -1.0)
+		var sum := 0.0
+		for i in 60:
+			await get_tree().process_frame
+			sum += get_process_delta_time()
+		print("[perf] %s draws=%d prims=%d objects=%d frame_ms=%.1f vram=%.0fMB" % [p[0],
+			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+			Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
+			Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
+			sum / 60.0 * 1000.0, Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0])
+	print("PERF_DONE")
+	get_tree().quit()
+
 func setup(m) -> void:
 	main = m
+	if "--perf" in OS.get_cmdline_user_args():
+		_perf_probe()
+		return
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--stills="):
 			want = a.substr(9)
@@ -41,9 +74,9 @@ func setup(m) -> void:
 	cam.make_current()
 	main.perf.enabled = false
 	main.title.skip_intro()
-	# No text in hero stills.
-	main.stand.sheet.visible = true
-	main.stand.pole.visible = true
+	# No text or UI in hero stills.
+	main.stand.root.visible = false
+	main.title.cards_enabled = false
 	main.music.virtual_clock = true
 	_run()
 
@@ -105,7 +138,7 @@ func _run() -> void:
 		for i in 4:
 			main.flock.wake_next()
 		await _settle(5.0)
-		_hand(Vector3(0.30, 0.14, -0.62))
+		_hand(Vector3(0.10, 0.22, -1.02))
 		_aim(eye, Vector3(-1.0, 1.1, -8.0), 72.0)
 		await _settle(0.8)
 		await _save("01_dawn")
@@ -113,7 +146,7 @@ func _run() -> void:
 		_stage("regatta", 40.0, "morning", "breeze")
 		main.flock.lead_point = Vector3(-3.5, 0, -5.5)
 		await _settle(5.0)
-		_hand(Vector3(0.26, -0.20, -0.60))
+		_hand(Vector3(0.02, -0.08, -1.04))
 		_aim(eye + Vector3(0.1, -0.05, 0), Vector3(-1.5, 0.75, -7.0), 72.0)
 		await _settle(0.5)
 		await _save("02_regatta")
@@ -121,7 +154,7 @@ func _run() -> void:
 		_stage("storm", 60.0, "storm", "rain")
 		await _settle(5.0)
 		main.storm.strike(Vector3(5.0, 0, -22.0), true)
-		_hand(Vector3(0.26, 0.05, -0.60))
+		_hand(Vector3(0.04, 0.14, -1.04))
 		_aim(eye, Vector3(1.0, 1.3, -8.0), 74.0)
 		await _settle(0.05)
 		await _save("03_storm")
@@ -132,7 +165,7 @@ func _run() -> void:
 		main.rainbow.set_bins(b, 1.0)
 		main.rainbow.alpha = 1.0
 		await _settle(5.0)
-		_hand(Vector3(0.30, 0.10, -0.60))
+		_hand(Vector3(0.00, 0.24, -1.00))
 		_aim(eye, Vector3(0.3, 2.3, -8.0), 78.0)
 		main.rainbow.alpha = 1.0
 		await _settle(0.5)
@@ -141,7 +174,7 @@ func _run() -> void:
 		_stage("cygne", 45.0, "golden", "clear")
 		main.flock.lead_point = Vector3(0.9, 0, -3.6)
 		await _settle(5.0)
-		_hand(Vector3(0.28, -0.22, -0.58))
+		_hand(Vector3(0.02, -0.14, -1.05))
 		_aim(eye + Vector3(0, -0.1, 0), Vector3(0.6, 0.55, -3.6), 62.0)
 		await _settle(0.5)
 		await _save("05_golden_swan")
@@ -150,7 +183,7 @@ func _run() -> void:
 		main.flock.set_formation("pair")
 		main.flock.lead_point = Vector3(0.0, 0, -4.6)
 		await _settle(6.0)
-		_hand(Vector3(0.30, -0.25, -0.58))
+		_hand(Vector3(0.05, -0.18, -1.05))
 		_aim(eye + Vector3(0, -0.25, 0), Vector3(0, 0.5, -4.8), 56.0)
 		await _settle(0.5)
 		await _save("06_heart")
@@ -160,7 +193,7 @@ func _run() -> void:
 		for i in 4:
 			main.constellation.light_next()
 		main.conductor._speed_avg = 2.0
-		_hand(Vector3(0.14, 0.26, -0.60))
+		_hand(Vector3(0.02, 0.34, -0.98))
 		_aim(eye, Vector3(-0.4, 3.0, -8.0), 86.0)
 		await _settle(0.5)
 		await _save("07_moonrise")
@@ -170,7 +203,7 @@ func _run() -> void:
 		main.set_gather(true)
 		main.beam_alpha = 0.16
 		await _settle(7.0)
-		_hand(Vector3(0.26, -0.16, -0.60))
+		_hand(Vector3(0.03, -0.10, -1.05))
 		_aim(eye, Vector3(0, 1.0, -6.0), 68.0)
 		await _settle(0.5)
 		await _save("08_scene")
@@ -183,21 +216,31 @@ func _run() -> void:
 		main.fireworks.launch(Vector3(-7, 0, -22))
 		main.fireworks.launch(Vector3(1, 0, -26))
 		main.fireworks.launch(Vector3(7, 0, -20))
-		_hand(Vector3(0.20, 0.12, -0.60))
+		_hand(Vector3(0.02, 0.32, -0.98))
 		await _settle(1.75)
-		_aim(eye, Vector3(0, 3.0, -8.0), 86.0)
+		_aim(eye, Vector3(0, 2.6, -8.0), 78.0)
 		await _settle(0.05)
 		await _save("09_finale")
 	if _ok("10_portrait"):
 		_stage("cygne", 45.0, "golden", "clear")
-		main.flock.set_formation("solo")
-		main.flock.lead_point = Vector3(0.8, 0, -2.9)
-		await _settle(6.0)
+		main.flock.set_formation("free")
+		main.flock.set_process(false)
+		for o in main.flock.swans:
+			o.global_position = Vector3(40, -5, 40)
 		var s: Swan = main.flock.swans[0]
+		s.global_position = Vector3(0, 0, -6.8)
+		s.heading = -PI * 0.58
+		s.rotation = Vector3(0, s.heading, 0)
+		s.dance_gain = 0.4
+		s.speed = 0.0
+		for i in 40:
+			s.update_swan(0.03, 11.0)
+			s.speed = 0.0
+			s.global_position = Vector3(0, 0, -6.8)
+			await get_tree().process_frame
 		var p: Vector3 = s.global_position
-		_hand(Vector3(0.0, -3.0, 0.0))
 		main.conductor.desktop_tip = Vector3.ZERO
-		_aim(p + Vector3(-1.05, 0.95, 1.05), p + Vector3(0, 0.58, -0.02), 46.0)
+		_aim(p + Vector3(0.15, 0.72, 1.95), p + Vector3(0.1, 0.50, 0), 36.0)
 		await _settle(0.3)
 		await _save("10_portrait")
 	print("STILLS_DONE")

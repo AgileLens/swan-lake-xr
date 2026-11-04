@@ -188,9 +188,10 @@ func _launch_mode() -> void:
 
 func _build_water() -> void:
 	var mesh := PlaneMesh.new()
-	mesh.size = Vector2(240, 240)
-	mesh.subdivide_width = 90
-	mesh.subdivide_depth = 90
+	# Runs well past every shoreline, so the lake has no edge to see.
+	mesh.size = Vector2(320, 320)
+	mesh.subdivide_width = 100
+	mesh.subdivide_depth = 100
 	water_mat = ShaderMaterial.new()
 	water_mat.shader = load("res://shaders/water.gdshader")
 	var mi := MeshInstance3D.new()

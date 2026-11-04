@@ -11,7 +11,7 @@ extends Node
 # than one choice. Stereo is last so the perf governor sheds it first.
 
 const MODES := ["analytic", "probe", "planar", "planar stereo"]
-const REFL_FOV := 95.0
+const REFL_FOV := 110.0  # wide enough for a headset view, the shader fades what it can't see
 const REFL_SIZE := 1024  # was 768; genuine GPU cost tied directly to a visible
                           # quality knob (reflection sharpness), unlike a blanket
                           # full-screen post effect — a good match for XR2-class

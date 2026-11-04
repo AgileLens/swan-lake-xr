@@ -74,6 +74,14 @@ func _run() -> void:
 	await _shot("dawn_top", pa + Vector3(0.9, 2.2, 0.5), pa + Vector3(0, 0.2, -0.1), 45.0)
 	await _shot("dawn_side_pure", pa + Vector3(2.2, 0.45, -1.0), pa + Vector3(0, 0.42, 0), 35.0)
 	await _shot("dawn_head", pa + Vector3(0.55, 1.0, -0.15), pa + Vector3(-0.15, 0.88, -0.4), 40.0)
+	# The glove and baton, from the wearer's eye and from the side.
+	main.conductor.desktop_tip = eye + Vector3(0.1, -0.1, -0.85)
+	await _settle()
+	await _shot("hand_eye", eye, eye + Vector3(0.1, -0.3, -1.0), 70.0)
+	var hp: Vector3 = main.conductor.anchors["right"].global_position
+	await _shot("hand_close", hp + Vector3(-0.35, 0.18, -0.25), hp + Vector3(0, -0.02, -0.03), 42.0)
+	await _shot("hand_side", hp + Vector3(0.42, 0.12, 0.05), hp + Vector3(0, -0.02, -0.08), 42.0)
+	main.conductor.desktop_tip = Vector3.ZERO
 	# Pose sheet.
 	var poses := [["rest", {}], ["tall", {"tgt_tall": 1.0}], ["sleep", {"tgt_sleep": 1.0}],
 		["heart", {"tgt_heart": 1.0}], ["busk", {"tgt_wing": 0.5}], ["spread", {"tgt_wing": 1.0, "tgt_tall": 1.0}]]

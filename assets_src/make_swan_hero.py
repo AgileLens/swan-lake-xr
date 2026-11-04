@@ -814,7 +814,7 @@ if not NO_BAKE:
     c = np.array(img_c.pixels[:]).reshape(1024, 1024, 4)
     ao = np.array(img_ao.pixels[:]).reshape(1024, 1024, 4)[:, :, 0]
     ao = np.clip(ao, 0.0, 1.0)
-    shade = 0.42 + 0.58 * ao ** 0.8
+    shade = 0.62 + 0.38 * ao ** 0.8  # gentle: wings can open, so the flank must survive being seen
     c[:, :, :3] = c[:, :, :3] * shade[:, :, None]
     out = new_image("swan_albedo", 1024, False)
     out.pixels = c.ravel().tolist()

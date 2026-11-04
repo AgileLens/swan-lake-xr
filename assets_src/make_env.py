@@ -107,7 +107,7 @@ def smooth_noise(x, seed):
 def shore_radius(a):
     """Shoreline distance from the lake center at bearing a. a = +pi/2 points toward the dock."""
     toward_dock = max(math.cos(a - math.pi * -0.5), 0.0)
-    r = 64.0 + 8.0 * smooth_noise(a * 2.0, 1.3)
+    r = 100.0 + 12.0 * smooth_noise(a * 2.0, 1.3)
     # The near bank comes in close behind the dock.
     return r * (1.0 - toward_dock ** 3) + 19.5 * toward_dock ** 3 + toward_dock ** 3 * 0.8 * smooth_noise(a * 6.0, 2.1)
 
@@ -160,7 +160,7 @@ def build_ridges():
     """Layered far mountains. Scene fog gives them aerial perspective."""
     b = Batch("Ridges")
     SEG = 120
-    for layer, (r, hmin, hmax, seed, tone) in enumerate(((190.0, 16.0, 44.0, 3.3, (0.070, 0.110, 0.095)), (270.0, 30.0, 78.0, 5.1, (0.080, 0.105, 0.115)))):
+    for layer, (r, hmin, hmax, seed, tone) in enumerate(((250.0, 26.0, 68.0, 3.3, (0.070, 0.110, 0.095)), (340.0, 48.0, 118.0, 5.1, (0.080, 0.105, 0.115)))):
         verts, cols = [], []
         for j in range(SEG + 1):
             a = 2 * math.pi * j / SEG
@@ -210,7 +210,7 @@ def round_tree(b, x, y, z, h, tone_k):
 
 def build_trees():
     b = Batch("Trees")
-    for j in range(420):
+    for j in range(560):
         a = R.uniform(0, 2 * math.pi)
         d = R.uniform(3.0, 34.0) * R.uniform(0.5, 1.0)
         rs = shore_radius(a)
@@ -219,9 +219,9 @@ def build_trees():
         # Keep clear of the end of the dock, so the near bank has a little clearing.
         if math.hypot(x, y + 4.8) < 7.0:
             continue
-        h = R.uniform(7.0, 15.0)
+        h = R.uniform(8.0, 18.0)
         k = R.uniform(0.8, 1.15)
-        if R.random() < 0.7:
+        if R.random() < 0.94:
             conifer(b, x, y, z, h, k)
         else:
             round_tree(b, x, y, z, h * 0.8, k)
@@ -300,10 +300,10 @@ def build_lilies():
                     a = 2 * math.pi * j / pn
                     b.v.append((x + math.cos(a) * 0.055, y + math.sin(a) * 0.055, 0.075))
                     b.c.append(p + (0.0,))
-                    b.uv.append((0.25, 0.0))
+                    b.uv.append((0.0, 0.0))
                 b.v.append((x, y, 0.035))
                 b.c.append((0.85, 0.70, 0.20, 0.0))
-                b.uv.append((0.5, 0.0))
+                b.uv.append((0.0, 0.0))
                 for j in range(pn):
                     b.f.append((fb + j, fb + (j + 1) % pn, fb + pn))
     return b

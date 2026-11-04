@@ -14,7 +14,7 @@ var finale_barrage_left := 0
 func setup(m) -> void:
 	main = m
 	main.water_mat.set_shader_parameter("glint_pulse", 0.0)
-	for i in 5:
+	for i in 7:
 		var p := GPUParticles3D.new()
 		p.one_shot = true
 		p.emitting = false
@@ -26,8 +26,8 @@ func setup(m) -> void:
 		pm.emission_sphere_radius = 0.1
 		pm.spread = 180.0
 		pm.direction = Vector3(0, 1, 0)
-		pm.initial_velocity_min = 4.5
-		pm.initial_velocity_max = 8.5
+		pm.initial_velocity_min = 7.0
+		pm.initial_velocity_max = 13.5
 		pm.gravity = Vector3(0, -1.3, 0)
 		pm.damping_min = 1.4
 		pm.damping_max = 2.2
@@ -39,7 +39,7 @@ func setup(m) -> void:
 		pm.scale_curve = sc
 		p.process_material = pm
 		var quad := QuadMesh.new()
-		quad.size = Vector2(0.14, 0.14)
+		quad.size = Vector2(0.30, 0.30)
 		var m2 := StandardMaterial3D.new()
 		m2.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m2.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -68,7 +68,7 @@ func set_palette(colors: Array) -> void:
 
 func launch(at: Vector3) -> void:
 	var start := Vector3(at.x, 0.0, at.z)
-	var apex := Vector3(at.x + randf_range(-1, 1), randf_range(7.5, 12.5), at.z + randf_range(-1, 1))
+	var apex := Vector3(at.x + randf_range(-1, 1), randf_range(13.0, 22.0), at.z + randf_range(-1, 1))
 	var head := MeshInstance3D.new()
 	var sm := SphereMesh.new()
 	sm.radius = 0.09; sm.height = 0.18

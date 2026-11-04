@@ -74,6 +74,7 @@ func _step_down() -> void:
 	# The corps is the single biggest lever — shed it level by level first.
 	if main.megaflock.level > 1:
 		main.megaflock.set_level(main.megaflock.level - 1)
+		main.megaflock.max_level = main.megaflock.level
 		return
 	# Fireflies (2500 default) are the second-biggest addition — shed a tier at
 	# a time down to the original 130 before touching anything else.

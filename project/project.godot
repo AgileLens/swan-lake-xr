@@ -3,10 +3,10 @@ config_version=5
 
 [application]
 
-config/name="Swan Lake"
-config/version="0.1.0"
+config/name="Pico Swan Lake"
+config/version="5.0.0"
 run/main_scene="res://scenes/main.tscn"
-config/icon="res://icon.svg"
+config/icon="res://icon.png"
 config/features=PackedStringArray("4.7", "Mobile")
 
 [audio]

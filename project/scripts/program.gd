@@ -286,6 +286,8 @@ func _fire_cue(c: Dictionary) -> void:
 		main.mood.apply(c["mood"], float(c.get("dur", 2.0)) <= 0.0, float(c.get("dur", 2.0)))
 	if c.has("weather"):
 		main.weather.set_weather(c["weather"])
+	if c.has("corps"):
+		main.megaflock.request_level(int(c["corps"]))
 	if c.has("formation"):
 		main.flock.set_formation(c["formation"])
 	if c.has("auto_gather"):
