@@ -18,8 +18,8 @@ uniform float music_energy = 0.0;
 // The baked swan is only ±0.25 units wide (measured from the mesh AABB, not
 // guessed) — a 0.22 threshold left 0.03 units of "wing" and the flap was
 // invisible. Hinge at 0.09 so the outer ~2/3 of the wing actually travels.
-uniform float wing_hinge = 0.09;
-uniform float wing_tip = 0.25;
+uniform float wing_hinge = 0.10;
+uniform float wing_tip = 0.27;
 
 void vertex() {
 	float phase = INSTANCE_CUSTOM.x;
@@ -56,7 +56,9 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = vec3(0.93, 0.93, 0.91);
+	ALBEDO = COLOR.rgb;
 	ROUGHNESS = 0.8;
-	SPECULAR = 0.3;
+	SPECULAR = 0.2;
+	RIM = 0.35;
+	RIM_TINT = 0.75;
 }

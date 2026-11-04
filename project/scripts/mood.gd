@@ -4,7 +4,10 @@ extends Node
 # firework colors, milky way. A/X (or 1/2/3 desktop) cycles, everything tweens.
 
 var main  # SwanLakeMain (untyped: cyclic)
-var order := ["night", "dusk", "dawn"]
+var order := ["night", "dusk", "dawn", "morning", "golden"]
+var sun_nudge := 0.0   # 0..1: the raised baton lifts the sun a little in the Dawn movement
+var _base_sun := Vector3.ZERO
+var _star_amount := 1.0
 var current := "night"
 
 var presets := {
@@ -77,19 +80,115 @@ var presets := {
 		"beam": Color(0.85, 0.90, 1.00),
 		"fireworks": [Color(1.0, 0.85, 0.6), Color(1.0, 0.6, 0.6), Color(0.95, 0.9, 0.75)],
 	},
+	"predawn": {
+		"cloud_cover": 0.30, "cloud_tint": Color(0.20, 0.24, 0.36), "aurora": 0.0,
+		"aurora_a": Color(0.16, 0.92, 0.60), "aurora_b": Color(0.45, 0.35, 0.95),
+		"sky_top": Color(0.012, 0.022, 0.070), "sky_horizon": Color(0.150, 0.150, 0.270),
+		"stars": 0.85, "milkyway": 0.7, "moon_color": Color(0.85, 0.90, 1.00), "moon_energy": 0.14,
+		"moon_dir": Vector3(0.45, 0.45, -0.77), "fog_color": Color(0.060, 0.070, 0.120), "fog_density": 0.016,
+		"water_base": Color(0.012, 0.022, 0.050), "water_horizon": Color(0.110, 0.120, 0.210),
+		"glint": Color(0.70, 0.78, 1.00), "firefly": Color(0.55, 0.85, 1.00), "accent": Color(0.75, 0.82, 1.00),
+		"beam": Color(0.55, 0.75, 1.00), "fireworks": [Color(0.65, 0.85, 1.0), Color(0.95, 0.97, 1.0), Color(0.75, 0.6, 1.0)],
+		"ambient": 0.75, "sun": 0.0, "reflect": 0.45,
+	},
+	"sunrise": {
+		"cloud_cover": 0.42, "cloud_tint": Color(1.00, 0.70, 0.56), "aurora": 0.0,
+		"aurora_a": Color(0.50, 0.80, 0.90), "aurora_b": Color(0.95, 0.75, 0.60),
+		"sky_top": Color(0.150, 0.280, 0.520), "sky_horizon": Color(1.00, 0.640, 0.420),
+		"stars": 0.0, "milkyway": 0.0, "moon_color": Color(1.00, 0.76, 0.50), "moon_energy": 1.05,
+		"moon_dir": Vector3(-0.58, 0.20, -0.79), "fog_color": Color(0.780, 0.580, 0.470), "fog_density": 0.0105,
+		"water_base": Color(0.045, 0.075, 0.110), "water_horizon": Color(0.82, 0.60, 0.46),
+		"glint": Color(1.00, 0.80, 0.55), "firefly": Color(1.00, 0.95, 0.80), "accent": Color(1.00, 0.85, 0.60),
+		"beam": Color(1.00, 0.85, 0.65), "fireworks": [Color(1.0, 0.85, 0.6), Color(1.0, 0.6, 0.6), Color(0.95, 0.9, 0.75)],
+		"ambient": 0.75, "sun": 1.0, "reflect": 0.55,
+	},
+	"morning": {
+		"cloud_cover": 0.36, "cloud_tint": Color(1.00, 0.99, 0.97), "aurora": 0.0,
+		"aurora_a": Color(0.50, 0.80, 0.90), "aurora_b": Color(0.95, 0.75, 0.60),
+		"sky_top": Color(0.150, 0.330, 0.700), "sky_horizon": Color(0.700, 0.830, 0.930),
+		"stars": 0.0, "milkyway": 0.0, "moon_color": Color(1.00, 0.96, 0.88), "moon_energy": 1.25,
+		"moon_dir": Vector3(-0.46, 0.66, -0.60), "fog_color": Color(0.660, 0.780, 0.880), "fog_density": 0.0052,
+		"water_base": Color(0.035, 0.120, 0.170), "water_horizon": Color(0.560, 0.740, 0.860),
+		"glint": Color(1.00, 0.97, 0.88), "firefly": Color(1.00, 0.95, 0.80), "accent": Color(1.00, 0.95, 0.75),
+		"beam": Color(1.00, 0.95, 0.80), "fireworks": [Color(1.0, 0.85, 0.5), Color(0.9, 0.5, 0.5), Color(0.5, 0.7, 1.0)],
+		"ambient": 0.72, "sun": 1.0, "reflect": 0.55,
+	},
+	"gathering": {
+		"cloud_cover": 0.82, "cloud_tint": Color(0.42, 0.46, 0.52), "aurora": 0.0,
+		"aurora_a": Color(0.5, 0.8, 0.9), "aurora_b": Color(0.9, 0.7, 0.6),
+		"sky_top": Color(0.120, 0.160, 0.240), "sky_horizon": Color(0.420, 0.470, 0.520),
+		"stars": 0.0, "milkyway": 0.0, "moon_color": Color(0.88, 0.90, 0.96), "moon_energy": 0.42,
+		"moon_dir": Vector3(-0.20, 0.72, -0.66), "fog_color": Color(0.320, 0.370, 0.420), "fog_density": 0.012,
+		"water_base": Color(0.030, 0.060, 0.075), "water_horizon": Color(0.300, 0.360, 0.420),
+		"glint": Color(0.80, 0.86, 0.92), "firefly": Color(0.8, 0.9, 1.0), "accent": Color(0.75, 0.88, 1.00),
+		"beam": Color(0.8, 0.9, 1.0), "fireworks": [Color(0.7, 0.8, 1.0), Color(0.9, 0.9, 1.0), Color(0.7, 0.6, 1.0)],
+		"ambient": 0.7, "sun": 0.4, "reflect": 0.5,
+	},
+	"storm": {
+		"cloud_cover": 1.0, "cloud_tint": Color(0.17, 0.19, 0.24), "aurora": 0.0,
+		"aurora_a": Color(0.5, 0.8, 0.9), "aurora_b": Color(0.9, 0.7, 0.6),
+		"sky_top": Color(0.040, 0.052, 0.075), "sky_horizon": Color(0.150, 0.180, 0.210),
+		"stars": 0.0, "milkyway": 0.0, "moon_color": Color(0.70, 0.76, 0.88), "moon_energy": 0.20,
+		"moon_dir": Vector3(0.05, 0.80, -0.60), "fog_color": Color(0.110, 0.130, 0.160), "fog_density": 0.024,
+		"water_base": Color(0.014, 0.030, 0.038), "water_horizon": Color(0.120, 0.150, 0.180),
+		"glint": Color(0.70, 0.78, 0.90), "firefly": Color(0.8, 0.9, 1.0), "accent": Color(0.70, 0.86, 1.00),
+		"beam": Color(0.7, 0.85, 1.0), "fireworks": [Color(0.7, 0.8, 1.0), Color(0.9, 0.9, 1.0), Color(0.7, 0.6, 1.0)],
+		"ambient": 0.75, "sun": 0.0, "reflect": 0.45,
+	},
+	"clearing": {
+		"cloud_cover": 0.52, "cloud_tint": Color(0.96, 0.92, 0.84), "aurora": 0.0,
+		"aurora_a": Color(0.5, 0.8, 0.9), "aurora_b": Color(0.9, 0.7, 0.6),
+		"sky_top": Color(0.170, 0.320, 0.600), "sky_horizon": Color(0.760, 0.780, 0.760),
+		"stars": 0.0, "milkyway": 0.0, "moon_color": Color(1.00, 0.92, 0.76), "moon_energy": 1.20,
+		"moon_dir": Vector3(0.38, 0.50, 0.78), "fog_color": Color(0.680, 0.730, 0.760), "fog_density": 0.0065,
+		"water_base": Color(0.032, 0.105, 0.135), "water_horizon": Color(0.620, 0.720, 0.760),
+		"glint": Color(1.00, 0.95, 0.80), "firefly": Color(1.00, 0.95, 0.80), "accent": Color(1.00, 0.90, 0.65),
+		"beam": Color(1.00, 0.93, 0.75), "fireworks": [Color(1.0, 0.85, 0.5), Color(0.9, 0.5, 0.5), Color(0.5, 0.7, 1.0)],
+		"ambient": 0.72, "sun": 1.0, "reflect": 0.55,
+	},
+	"golden": {
+		"cloud_cover": 0.40, "cloud_tint": Color(1.00, 0.72, 0.46), "aurora": 0.0,
+		"aurora_a": Color(0.60, 0.40, 0.80), "aurora_b": Color(0.90, 0.50, 0.55),
+		"sky_top": Color(0.180, 0.260, 0.480), "sky_horizon": Color(1.00, 0.620, 0.260),
+		"stars": 0.0, "milkyway": 0.0, "moon_color": Color(1.00, 0.70, 0.36), "moon_energy": 1.15,
+		"moon_dir": Vector3(0.52, 0.17, -0.84), "fog_color": Color(0.780, 0.500, 0.300), "fog_density": 0.0085,
+		"water_base": Color(0.040, 0.050, 0.075), "water_horizon": Color(0.950, 0.560, 0.250),
+		"glint": Color(1.00, 0.74, 0.38), "firefly": Color(1.00, 0.75, 0.40), "accent": Color(1.00, 0.76, 0.42),
+		"beam": Color(1.00, 0.72, 0.42), "fireworks": [Color(1.0, 0.78, 0.35), Color(1.0, 0.5, 0.45), Color(0.95, 0.5, 0.9)],
+		"ambient": 0.72, "sun": 1.0, "reflect": 0.6,
+	},
+	"gala": {
+		"cloud_cover": 0.14, "cloud_tint": Color(0.30, 0.36, 0.52), "aurora": 0.40,
+		"aurora_a": Color(0.20, 0.80, 0.75), "aurora_b": Color(0.55, 0.30, 0.95),
+		"sky_top": Color(0.006, 0.010, 0.036), "sky_horizon": Color(0.030, 0.052, 0.120),
+		"stars": 1.15, "milkyway": 1.2, "moon_color": Color(0.98, 0.97, 0.90), "moon_energy": 0.42,
+		"moon_dir": Vector3(-0.30, 0.34, -0.89), "fog_color": Color(0.014, 0.028, 0.056), "fog_density": 0.009,
+		"water_base": Color(0.008, 0.020, 0.042), "water_horizon": Color(0.040, 0.070, 0.130),
+		"glint": Color(0.85, 0.92, 1.00), "firefly": Color(0.55, 0.85, 1.00), "accent": Color(0.85, 0.95, 1.00),
+		"beam": Color(0.55, 0.75, 1.00), "fireworks": [Color(1.0, 0.82, 0.4), Color(0.95, 0.97, 1.0), Color(0.95, 0.4, 0.5), Color(0.5, 0.75, 1.0)],
+		"ambient": 0.7, "sun": 0.0, "reflect": 0.45,
+	},
 }
 
 func setup(m) -> void:
 	main = m
+	_base_sun = presets["night"].moon_dir
 
 func cycle() -> void:
 	var i := (order.find(current) + 1) % order.size()
 	apply(order[i], false)
 
-func apply(name: String, instant: bool) -> void:
+func star_visibility() -> float:
+	return _star_amount
+
+func apply(name: String, instant: bool, seconds := 2.2) -> void:
 	current = name
 	var p: Dictionary = presets[name]
-	var dur := 0.0 if instant else 2.2
+	var dur := 0.0 if instant else seconds
+	_star_amount = float(p.stars)
+	_sh(main.sky_mat, "is_sun", float(p.get("sun", 0.0)), dur)
+	_sh(main.water_mat, "reflect_gain", float(p.get("reflect", 0.45)), dur)
+	_sh(main.water_mat, "star_sparkle", float(p.stars), dur)
 	_sh(main.sky_mat, "top_color", p.sky_top, dur)
 	_sh(main.sky_mat, "horizon_color", p.sky_horizon, dur)
 	_sh(main.sky_mat, "star_intensity", p.stars, dur)
@@ -112,13 +211,23 @@ func apply(name: String, instant: bool) -> void:
 		main.env.fog_density = p.fog_density
 		main.moon.light_color = p.moon_color
 		main.moon.light_energy = p.moon_energy
+		main.env.ambient_light_energy = float(p.get("ambient", 0.7))
+		_base_sun = p.moon_dir
+		main._aim_moon(p.moon_dir)
+		return
 	else:
 		var tw := create_tween().set_parallel(true)
 		tw.tween_property(main.env, "fog_light_color", p.fog_color, dur)
 		tw.tween_property(main.env, "fog_density", p.fog_density, dur)
 		tw.tween_property(main.moon, "light_color", p.moon_color, dur)
 		tw.tween_property(main.moon, "light_energy", p.moon_energy, dur)
-	main._aim_moon(p.moon_dir)
+		tw.tween_property(main.env, "ambient_light_energy", float(p.get("ambient", 0.7)), dur)
+		# The sun and moon travel, rather than jump, between presets.
+		tw.tween_method(_aim_with_nudge, _base_sun, p.moon_dir as Vector3, dur)
+	_base_sun = p.moon_dir
+
+func _aim_with_nudge(d: Vector3) -> void:
+	main._aim_moon(d + Vector3(0, 0.05 * sun_nudge, 0))
 
 func _sh(mat: ShaderMaterial, uniform: String, to_val, dur: float) -> void:
 	if dur <= 0.0:

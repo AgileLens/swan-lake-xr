@@ -25,6 +25,7 @@ var _cursor := 0
 var _prev_level_before_finale := -1
 var _shader_mat: ShaderMaterial
 var chorus := 0.0  # 0 = watching, 1 = singing along
+var _ovation := 0.0
 
 func setup(m) -> void:
 	main = m
@@ -35,8 +36,8 @@ func setup(m) -> void:
 	# detail on — and the default level bumped from 200 to 800. Far ring stays
 	# origami (style0): it's silhouette-distance only, upgrading it would add
 	# per-instance cost nobody would ever see clearly.
-	near_mmi = _make_mmi("res://assets/swan_style2.glb")
-	far_mmi = _make_mmi("res://assets/swan_style0.glb")
+	near_mmi = _make_mmi("res://assets/swan/swan_corps_near.glb")
+	far_mmi = _make_mmi("res://assets/swan/swan_corps_far.glb")
 	# Audience visible from first launch — the audience/chorus work is
 	# otherwise invisible unless someone opens the orb menu, which a demo guest
 	# won't know to do. The governor can still shed it under load.
@@ -123,6 +124,9 @@ func finale_swell() -> void:
 		_prev_level_before_finale = level
 		set_level(2)  # 800 swans arrive for the finale
 
+func ovation(amount: float) -> void:
+	_ovation = amount
+
 func relax() -> void:
 	if _prev_level_before_finale >= 0:
 		set_level(_prev_level_before_finale)
@@ -139,6 +143,7 @@ func _process(delta: float) -> void:
 	var want: float = smoothstep(CHORUS_ON, CHORUS_FULL, e)
 	if main.music.act4_active:
 		want = 1.0
+	want = maxf(want, _ovation)
 	chorus = lerpf(chorus, want, clampf(delta * 1.6, 0.0, 1.0))
 	_shader_mat.set_shader_parameter("chorus", chorus)
 	_shader_mat.set_shader_parameter("beat_phase", main.music.beat_phase())

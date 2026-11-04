@@ -4,13 +4,14 @@ extends Node
 # the wavelets and sways the reeds; loops fade via SfxPool.
 
 var main  # SwanLakeMain
-var order := ["clear", "snow", "rain", "breeze"]
+var order := ["clear", "snow", "rain", "breeze", "mist"]
 var current := "clear"
 var snow: GPUParticles3D
 var rain: GPUParticles3D
 var mist: GPUParticles3D
 var rain_timer := 0.0
 var reeds: Array[Node3D] = []
+var wind := 1.0
 
 func setup(m) -> void:
 	main = m
@@ -77,15 +78,16 @@ func set_weather(name: String) -> void:
 	current = name
 	snow.emitting = name == "snow"
 	rain.emitting = name == "rain"
-	mist.emitting = name == "breeze"
+	mist.emitting = name == "breeze" or name == "mist"
 	var amp := 1.0
 	match name:
 		"breeze": amp = 1.65
+		"mist": amp = 0.5
 		"rain": amp = 1.3
 		"snow": amp = 0.85
 	main.water_mat.set_shader_parameter("wave_amp", amp)
 	match name:
-		"rain": main.audio.set_weather_loop("rain_loop", -20.0)
+		"rain": main.audio.set_weather_loop("rain_loop", -24.0)
 		"breeze": main.audio.set_weather_loop("wind_loop", -19.0)
 		"snow": main.audio.set_weather_loop("wind_loop", -27.0)
 		_: main.audio.set_weather_loop("")
@@ -97,9 +99,12 @@ func _process(delta: float) -> void:
 			rain_timer = 0.16
 			var p := Vector3(randf_range(-10, 10), 0, randf_range(-16, -1))
 			main.ripples.add(p, randf_range(0.025, 0.06))
-	if current == "breeze" or current == "snow":
-		var t: float = main.t
-		for i in reeds.size():
-			var r := reeds[i]
-			var base: float = r.get_meta("sway0", 0.0)
-			r.rotation.z = base + sin(t * 1.7 + float(i) * 1.3) * (0.09 if current == "breeze" else 0.03)
+	var want_wind := 1.0
+	match current:
+		"breeze": want_wind = 2.2
+		"rain": want_wind = 3.4
+		"mist": want_wind = 0.4
+		"snow": want_wind = 0.7
+	wind = lerpf(wind, want_wind, clampf(delta * 0.5, 0.0, 1.0))
+	if main.env_mat:
+		main.env_mat.set_shader_parameter("wind", wind)

@@ -96,19 +96,19 @@ func _refresh() -> void:
 	for i in defs.size():
 		labels[i].text = "%s\n[%s]" % [defs[i].name, str(defs[i].get.call())]
 
-func aimed_orb(c: XRController3D) -> int:
+func aimed_orb(pose: Transform3D) -> int:
 	if not open or root == null:
 		return -1
-	var from := c.global_position
-	var dir := -c.global_transform.basis.z
+	var from := pose.origin
+	var dir := -pose.basis.z
 	for i in orbs.size():
 		var to: Vector3 = orbs[i].global_position
 		if dir.angle_to((to - from).normalized()) < deg_to_rad(4.5) and from.distance_to(to) < 4.0:
 			return i
 	return -1
 
-func try_tap(c: XRController3D) -> bool:
-	var i := aimed_orb(c)
+func try_tap(pose: Transform3D) -> bool:
+	var i := aimed_orb(pose)
 	if i < 0:
 		return false
 	defs[i].cycle.call()
@@ -128,8 +128,8 @@ func _process(_d: float) -> void:
 		_refresh()
 	for i in orbs.size():
 		var hot := false
-		for c in main.controllers:
-			if aimed_orb(c) == i:
+		for hand in main.HANDS:
+			if main.hand_input.active(hand) and aimed_orb(main.hand_input.pose(hand)) == i:
 				hot = true
 				break
 		var mm: StandardMaterial3D = orbs[i].material_override

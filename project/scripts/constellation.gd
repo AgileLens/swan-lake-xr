@@ -9,6 +9,7 @@ var stars: Array[MeshInstance3D] = []
 var lit: Array[bool] = []
 var done := false
 var lines_drawn := false
+var prominent := false
 # Cygnus cross, roughly: Deneb tail, Sadr center, Albireo head, wing tips + inner wings
 var dirs := [
 	Vector3(-0.10, 0.62, -0.72),  # Deneb
@@ -41,23 +42,47 @@ func setup(m) -> void:
 		stars.append(s)
 		lit.append(false)
 
-func aimed_star(c: XRController3D) -> int:
+func aimed_star(pose: Transform3D) -> int:
 	if done:
 		return -1
 	var head: Vector3 = main.head_transform().origin
-	var dir := -c.global_transform.basis.z
+	var dir := -pose.basis.z
+	var tol := deg_to_rad(6.0 if prominent else 3.0)
 	for i in stars.size():
 		if lit[i]:
 			continue
 		var to := (stars[i].global_position - head).normalized()
-		if dir.angle_to(to) < deg_to_rad(3.0):
+		if dir.angle_to(to) < tol:
 			return i
 	return -1
 
-func try_tap(c: XRController3D) -> bool:
-	var i := aimed_star(c)
+func try_tap(pose: Transform3D) -> bool:
+	var i := aimed_star(pose)
 	if i < 0:
 		return false
+	_light(i)
+	main.program.on_star_lit()
+	return true
+
+func count_lit() -> int:
+	var n := 0
+	for l in lit:
+		if l:
+			n += 1
+	return n
+
+func light_next() -> void:
+	# The moon finishes what's left, so the constellation always completes.
+	for i in lit.size():
+		if not lit[i]:
+			_light(i)
+			return
+
+func set_prominent(on: bool) -> void:
+	# In the Moonrise movement, the seven stars brighten so they can be found without being told.
+	prominent = on
+
+func _light(i: int) -> void:
 	lit[i] = true
 	var mm: StandardMaterial3D = stars[i].material_override
 	mm.emission = Color(1.0, 0.88, 0.5)
@@ -69,23 +94,29 @@ func try_tap(c: XRController3D) -> bool:
 	main.audio.play2d("chime_%d" % clampi(n_lit, 1, 7), -4.0)
 	if n_lit == lit.size():
 		_complete()
-	return true
 
 func _process(_delta: float) -> void:
-	if done or main.controllers.is_empty():
+	if done:
 		return
-	# hover glow
+	# Stars only make sense in a dark sky.
+	var night: float = main.mood.star_visibility()
+	for s in stars:
+		s.visible = night > 0.05
+	var hot := -1
+	for hand in main.HANDS:
+		if main.hand_input.active(hand):
+			hot = aimed_star(main.hand_input.pose(hand))
+			if hot >= 0:
+				break
+	if not main.xr_active and main.conductor.tip_position() != Vector3.ZERO:
+		hot = aimed_star(main.baton_aim_pose())
 	for i in stars.size():
 		if lit[i]:
 			continue
-		var hovered := false
-		for c in main.controllers:
-			if aimed_star(c) == i:
-				hovered = true
-				break
 		var mm: StandardMaterial3D = stars[i].material_override
-		mm.emission_energy_multiplier = 2.6 if hovered else 1.1 + 0.25 * sin(main.t * 2.0 + float(i))
-		stars[i].scale = Vector3.ONE * (1.3 if hovered else 1.0)
+		var base := 2.2 if prominent else 1.1
+		mm.emission_energy_multiplier = (4.0 if i == hot else base + 0.35 * sin(main.t * 2.0 + float(i))) * night
+		stars[i].scale = Vector3.ONE * (1.5 if i == hot else (1.25 if prominent else 1.0))
 
 func _complete() -> void:
 	done = true

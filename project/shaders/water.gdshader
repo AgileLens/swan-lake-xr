@@ -10,6 +10,7 @@ uniform float glint_pulse = 0.0;        // fireworks flash
 uniform float u_time = 0.0;
 uniform float music_energy = 0.0;
 uniform float wave_amp = 1.0;           // weather boost
+uniform float reflect_gain = 0.45;
 uniform float star_sparkle = 1.0;       // twinkling star glitter on calm water
 uniform float water_metallic = 0.0;     // raised in Probe reflection mode
 uniform int refl_mode = 0;              // 0 analytic, 1 probe, 2 planar mono, 3 planar stereo
@@ -81,7 +82,10 @@ void fragment() {
 	float calm = 1.0 - clamp(abs(nx) * 14.0 + abs(nz) * 14.0, 0.0, 1.0);
 	vec2 cell = floor(p * 7.0);
 	float hsh = hash21(cell + floor(u_time * vec2(1.7, 1.3)));
-	float spark = step(0.985, hsh) * calm * star_sparkle * (0.5 + 0.5 * sin(u_time * 9.0 + hsh * 40.0));
+	// A round point inside its cell. Without the radial term this was a bright square a
+	// hand wide on the water, which glow then bloomed into a white tile.
+	float spark_r = 1.0 - smoothstep(0.02, 0.09, length(fract(p * 7.0) - 0.5));
+	float spark = step(0.985, hsh) * spark_r * calm * star_sparkle * (0.5 + 0.5 * sin(u_time * 9.0 + hsh * 40.0));
 	emis += vec3(0.8, 0.9, 1.0) * spark * 0.35 * fres;
 	// crest foam: a thin white highlight where a ripple's local height peaks.
 	// This is a genuinely deep, opaque night lake (no visible lakebed at all —
@@ -98,11 +102,12 @@ void fragment() {
 		if (rp.w > 0.0) {
 			vec2 ruv = rp.xy / rp.w * 0.5 + 0.5;
 			ruv += vec2(nx, nz) * 0.12;
-			if (ruv.x > 0.0 && ruv.x < 1.0 && ruv.y > 0.0 && ruv.y < 1.0) {
-				vec2 fuv = vec2(ruv.x, 1.0 - ruv.y);
-				vec3 pc = right ? texture(planar_tex_r, fuv).rgb : texture(planar_tex, fuv).rgb;
-				emis += pc * fres * 0.45;
-			}
+			// Clamp, don't cut: a hard test here drew the mirror camera's frustum on the water as
+			// a sharp bright edge whenever the sky was brighter than the water's base color.
+			ruv = clamp(ruv, vec2(0.002), vec2(0.998));
+			vec2 fuv = vec2(ruv.x, 1.0 - ruv.y);
+			vec3 pc = right ? texture(planar_tex_r, fuv).rgb : texture(planar_tex, fuv).rgb;
+			emis += pc * fres * reflect_gain;
 		}
 	}
 	EMISSION = emis + mix(base_color, horizon_color, 0.5) * rip.x * 0.5;

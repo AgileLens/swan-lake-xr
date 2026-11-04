@@ -159,9 +159,13 @@ func _setup_skin_mesh(hand: String, _anchor: Node3D) -> void:
 		push_warning("[conductor] no Skeleton3D found in " + HAND_SCENES[hand])
 	skin_mesh[hand] = inst
 
+var desktop_tip := Vector3.ZERO  # mouse or autotest baton, when there's no XR session
+
 func tip_position() -> Vector3:
 	# baton tip = the arbitrated right-hand pose, so the sparkle trail, the tip
 	# light and the aim ray all track the same thing in either input mode
+	if not main.xr_active:
+		return desktop_tip
 	if main.hand_input and main.hand_input.active("right"):
 		var t: Transform3D = main.hand_input.pose("right")
 		# a bare finger has no baton in it — shorten the reach to the fingertip
@@ -256,8 +260,35 @@ func _track_hands() -> void:
 		if live:
 			anchor.global_transform = main.hand_input.pose(hand)
 
+func _desktop_hand() -> void:
+	# In preview, the mitten and baton ride the mouse, so stills and clips show a conductor.
+	var anchor: Node3D = anchors["right"]
+	var live := desktop_tip != Vector3.ZERO
+	anchor.visible = live
+	if live:
+		var head: Vector3 = main.head_transform().origin
+		var to := (desktop_tip - head).normalized()
+		var basis := Basis.looking_at(to, Vector3.UP)
+		anchor.global_transform = Transform3D(basis, desktop_tip - to * 0.30)
+		var inst: Node3D = anchor.get_child(0)
+		inst.rotation_degrees = Vector3(effective_pitch() * 0.0, 0, 0)
+
 func _process(delta: float) -> void:
-	if not main.xr_active or main.hand_input == null:
+	if main.hand_input == null:
+		return
+	if not main.xr_active:
+		_desktop_hand()
+		var dtip := tip_position()
+		if dtip != Vector3.ZERO:
+			var dspeed := (dtip - _prev_tip).length() / maxf(delta, 0.001)
+			_prev_tip = dtip
+			_speed_avg = lerpf(_speed_avg, clampf(dspeed, 0.0, 5.0), clampf(delta * 6.0, 0, 1))
+			conduct_energy = clampf(_speed_avg / 3.2, 0.0, 1.0)
+			sparkles.global_position = dtip
+			sparkles.emitting = _speed_avg > 0.8
+			sparkle_mat.emission_energy_multiplier = 2.2 + conduct_energy * 3.5 + main.music.energy * 1.5
+			tip_light.global_position = dtip
+			tip_light.light_energy = clampf(conduct_energy * 1.1 + main.music.energy * 0.25, 0.0, 1.4) * 0.8
 		return
 	_track_hands()
 	_apply_pose()  # source can flip mid-session; the offset must follow it

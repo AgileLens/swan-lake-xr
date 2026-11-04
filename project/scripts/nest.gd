@@ -10,7 +10,7 @@ var egg_mat: StandardMaterial3D
 var glowing := false
 var taps := 0
 var hatched := false
-const POS := Vector3(2.7, 0.02, -3.4)
+const POS := Vector3(3.1, 0.02, -2.4)
 
 func setup(m) -> void:
 	main = m
@@ -53,16 +53,16 @@ func enable_glow() -> void:
 	egg_mat.emission_enabled = true
 	egg_mat.emission = Color(0.7, 0.9, 1.0)
 
-func aimed(c: XRController3D) -> bool:
+func aimed(pose: Transform3D) -> bool:
 	if not glowing or hatched:
 		return false
-	var from := c.global_position
-	var dir := -c.global_transform.basis.z
+	var from := pose.origin
+	var dir := -pose.basis.z
 	var to := glow_egg.global_position
 	return dir.angle_to((to - from).normalized()) < deg_to_rad(4.0) and from.distance_to(to) < 8.0
 
-func try_tap(c: XRController3D) -> bool:
-	if not aimed(c):
+func try_tap(pose: Transform3D) -> bool:
+	if not aimed(pose):
 		return false
 	taps += 1
 	main.audio.plop(glow_egg.global_position, 0.4)

@@ -8,6 +8,7 @@ var pool2d: Array[AudioStreamPlayer] = []
 var loop_a: AudioStreamPlayer
 var loop_b: AudioStreamPlayer
 var cur_loop := ""
+var key_ratio := 1.0  # set each frame from the music director's measured key for this clip
 
 func _ready() -> void:
 	for n in ["plop_1","plop_2","plop_3","plop_4","splash","whoosh","crackle","hatch_chord",
@@ -29,13 +30,18 @@ func _ready() -> void:
 	loop_a = AudioStreamPlayer.new(); add_child(loop_a)
 	loop_b = AudioStreamPlayer.new(); add_child(loop_b)
 
+func _process(_d: float) -> void:
+	var m = get_parent().get("music")
+	if m:
+		key_ratio = m.key_ratio
+
 func play3d(name: String, pos: Vector3, vol_db := 0.0, pitch_jitter := 0.0) -> void:
 	for p in pool3d:
 		if not p.playing:
 			p.stream = streams[name]
 			p.global_position = pos
 			p.volume_db = vol_db
-			p.pitch_scale = 1.0 + randf_range(-pitch_jitter, pitch_jitter)
+			p.pitch_scale = key_ratio * (1.0 + randf_range(-pitch_jitter, pitch_jitter))
 			p.play()
 			return
 
@@ -47,7 +53,7 @@ func plop(pos: Vector3, strength := 1.0) -> void:
 			p.stream = streams["plop_%d" % (randi() % 4 + 1)]
 			p.global_position = pos
 			p.volume_db = linear_to_db(clampf(0.30 + strength * 0.55, 0.1, 0.9))
-			p.pitch_scale = pitch
+			p.pitch_scale = pitch * key_ratio
 			p.play()
 			return
 
@@ -55,9 +61,8 @@ const HARP_DEGREES := 8
 const HARP_LOW_DEGREES := 4
 
 func harp(pos: Vector3, degree: int, vol_db := -9.0) -> void:
-	# Plucked B-minor scale tone, tuned to within a cent (assets_src/make_sfx.py).
-	# Never pitch-shifted at runtime: a shifted pluck detunes against the orchestra,
-	# which is the whole thing this replaced.
+	# Plucked scale tone, tuned to within a cent of B minor (assets_src/make_sfx.py), then
+	# transposed by one exact ratio into the key of whichever recording is playing.
 	play3d("harp_%d" % (posmod(degree, HARP_DEGREES) + 1), pos, vol_db)
 
 func harp_low(pos: Vector3, degree: int, vol_db := -15.0) -> void:

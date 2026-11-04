@@ -59,7 +59,7 @@ func _intro() -> void:
 	var a := _label("A G I L E   L E N S", 44, Vector3(0, 0.55, 0), intro_root)
 	var b := _label("p r e s e n t s", 20, Vector3(0, 0.28, 0), intro_root)
 	var c := _label("S W A N   L A K E", 84, Vector3(0, -0.18, 0), intro_root)
-	var d := _label("a  P I C O   S w a n  e x p e r i e n c e", 18, Vector3(0, -0.52, 0), intro_root)
+	var d := _label("T h e   C o n d u c t o r ' s   P r o g r a m", 26, Vector3(0, -0.52, 0), intro_root)
 	var v := _label(main.BUILD_TAG, 11, Vector3(0, -0.72, 0), intro_root)
 	# orbit motif: thin ring + orbiting dot above the wordmark
 	orbit_ring = MeshInstance3D.new()
@@ -119,6 +119,40 @@ func skip_intro() -> void:
 	if not intro_done:
 		fade_mat.albedo_color.a = 0.0
 		_dissolve_intro()
+
+func movement_card(m: Dictionary) -> void:
+	# A title on the air over the lake, then gone. The stand keeps the details.
+	if m["numeral"] == "":
+		return
+	var root := Node3D.new()
+	root.position = Vector3(0, 2.45, -7.5)
+	main.add_child(root)
+	var a := _label(str(m["numeral"]), 26, Vector3(0, 0.42, 0), root)
+	var b := _label(str(m["title"]), 64, Vector3(0, 0.08, 0), root)
+	var c := _label("%s  ·  %s" % [m["piece"], m["composer"]], 15, Vector3(0, -0.30, 0), root)
+	var tw := create_tween()
+	tw.tween_property(a, "modulate:a", 0.75, 1.0)
+	tw.parallel().tween_property(b, "modulate:a", 1.0, 1.0)
+	tw.parallel().tween_property(c, "modulate:a", 0.75, 1.0)
+	tw.tween_interval(3.2)
+	tw.tween_property(a, "modulate:a", 0.0, 1.6)
+	tw.parallel().tween_property(b, "modulate:a", 0.0, 1.6)
+	tw.parallel().tween_property(c, "modulate:a", 0.0, 1.6)
+	tw.tween_callback(root.queue_free)
+
+func curtain_card(t: Dictionary) -> void:
+	var root := Node3D.new()
+	root.position = Vector3(0, 3.0, -9.0)
+	main.add_child(root)
+	var a := _label(str(t["name"]), 62, Vector3(0, 0.2, 0), root)
+	var b := _label("S W A N   L A K E   ·   A G I L E   L E N S", 20, Vector3(0, -0.28, 0), root)
+	var tw := create_tween()
+	tw.tween_property(a, "modulate:a", 1.0, 1.6)
+	tw.parallel().tween_property(b, "modulate:a", 0.85, 1.6)
+	tw.tween_interval(11.0)
+	tw.tween_property(a, "modulate:a", 0.0, 2.5)
+	tw.parallel().tween_property(b, "modulate:a", 0.0, 2.5)
+	tw.tween_callback(root.queue_free)
 
 func outro() -> void:
 	var root := Node3D.new()

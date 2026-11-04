@@ -76,6 +76,7 @@ func _add_eye() -> void:
 	vp.size = Vector2i(REFL_SIZE, REFL_SIZE)
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	vp.msaa_3d = Viewport.MSAA_2X
+	vp.mesh_lod_threshold = 6.0  # a rippled reflection doesn't need the hero meshes
 	main.add_child(vp)
 	var c := Camera3D.new()
 	c.fov = REFL_FOV
@@ -85,7 +86,11 @@ func _add_eye() -> void:
 	viewports.append(vp)
 	refl_cams.append(c)
 
+var override_eye := Transform3D()  # stills: the reflection follows the still camera, not the rig
+
 func _eye_transform(view: int) -> Transform3D:
+	if override_eye != Transform3D():
+		return override_eye
 	if view < 0:
 		return main.head_transform()  # mono: head center, both eyes share it
 	if main.xr_active and main.origin:

@@ -1,74 +1,153 @@
 class_name MusicDirector
 extends Node
-# PD Swan Lake playback + smoothed loudness envelope + Act 4 finale state.
+# Plays the program's recordings and answers "where are we in the music?" for everything else.
+#
+# Every clip ships with a baked beat map and loudness envelope (tools/make_program_audio.py).
+# Choreography, conducting scores and the SFX grid read those instead of a live spectrum
+# analyzer. That costs nothing on the audio thread, gives the same answer every run, and
+# lets --autotest run a 25 minute program on a virtual clock in seconds.
 
 signal finale_done
+signal clip_finished(clip_id: String)
 
-# Per-track tempo measured from the actual recordings by tools/measure_tempo.py
-# (onset-flux comb fit). v2 used one hardcoded 72 BPM for both, which matched
-# neither. Act 4 scored 79.0 unanimously; Act 2's Scène is ambiguous between
-# tempo octaves — 59.0 is the quarter-note family both metrics agree on.
-# offset = seconds into the file where the beat grid starts.
-const TRACKS := {
-	"act2": {"bpm": 59.0, "offset": 0.254},
-	"act4": {"bpm": 79.0, "offset": 0.237},
-}
-# How tightly one-shot SFX snap to the beat. Rubato makes true lock impossible,
-# so which of these reads best is a taste call — cycled from the orb menu.
+const SWELL_RATIO := 1.45
 const TIMING_MODES := ["eighth", "quarter", "free"]
 
 var energy := 0.0
 var timing_mode := 0
-var _sfx_queue: Array[Callable] = []
-var _next_grid := -1.0
 var swell_flag := false
-var act4_active := false
-var _spectrum: AudioEffectSpectrumAnalyzerInstance
-var _act2: AudioStreamPlayer
-var _act4: AudioStreamPlayer
+var act4_active := false  # true during the fireworks finale; megaflock and fireworks read it
+var key_ratio := 1.0      # SFX transposition into the current clip's key
+var virtual_clock := false  # --autotest: time passes without decoding audio
+var clip_id := ""
+var clip := {}            # the baked data of the current clip
+var _beats := PackedFloat32Array()
+var _env := PackedFloat32Array()
+var _player_a: AudioStreamPlayer
+var _player_b: AudioStreamPlayer
+var _active: AudioStreamPlayer
+var _virtual_pos := 0.0
 var _peak_avg := 0.0
 var _prev_energy := 0.0
+var _sfx_queue: Array[Callable] = []
+var _next_grid := -1.0
+var _loop := false
+var _ended := false
+var _cache := {}
 
 func _ready() -> void:
 	var idx := AudioServer.bus_count
 	AudioServer.add_bus(idx)
 	AudioServer.set_bus_name(idx, "Music")
 	AudioServer.set_bus_send(idx, "Master")
-	var fx := AudioEffectSpectrumAnalyzer.new()
-	fx.buffer_length = 0.1
-	AudioServer.add_bus_effect(idx, fx)
-	_spectrum = AudioServer.get_bus_effect_instance(idx, 0)
-	_act2 = AudioStreamPlayer.new()
-	_act2.stream = load("res://assets/music/act2_scene.ogg")
-	if _act2.stream is AudioStreamOggVorbis:
-		_act2.stream.loop = true
-	_act2.bus = "Music"
-	_act2.volume_db = -6.0
-	add_child(_act2)
-	_act4 = AudioStreamPlayer.new()
-	_act4.stream = load("res://assets/music/act4.ogg")
-	_act4.bus = "Music"
-	_act4.volume_db = -60.0
-	add_child(_act4)
-	_act2.play()
-	_act4.finished.connect(_on_finale_finished)
+	_player_a = AudioStreamPlayer.new()
+	_player_b = AudioStreamPlayer.new()
+	for p in [_player_a, _player_b]:
+		p.bus = "Music"
+		p.volume_db = -60.0
+		add_child(p)
+	_active = _player_a
 
-func play_finale() -> void:
-	if act4_active:
-		return
-	act4_active = true
-	_next_grid = -1.0  # re-latch the grid to act 4's tempo/phase
-	_act4.volume_db = -6.0
-	_act4.play()
-	var tw := create_tween()
-	tw.tween_property(_act2, "volume_db", -28.0, 2.0)
+static func load_clip_data(id: String) -> Dictionary:
+	var f := FileAccess.open("res://assets/music/%s.json" % id, FileAccess.READ)
+	if f == null:
+		push_error("[music] missing beat map for clip '%s'" % id)
+		return {}
+	return JSON.parse_string(f.get_as_text())
 
-func _on_finale_finished() -> void:
-	act4_active = false
+func play_clip(id: String, fade := 1.2, from := 0.0, loop := false) -> void:
+	clip_id = id
+	if not _cache.has(id):
+		_cache[id] = load_clip_data(id)
+	clip = _cache[id]
+	_beats = PackedFloat32Array(clip.get("beats", []))
+	_env = PackedFloat32Array(clip.get("env", []))
+	key_ratio = float(clip.get("key_ratio", 1.0))
+	_loop = loop
+	_ended = false
 	_next_grid = -1.0
+	_virtual_pos = from
+	if virtual_clock:
+		return
+	var old := _active
+	_active = _player_b if old == _player_a else _player_a
+	var stream: AudioStream = load("res://assets/music/%s.mp3" % id)
+	if stream is AudioStreamMP3:
+		(stream as AudioStreamMP3).loop = loop
+	_active.stream = stream
+	_active.volume_db = -40.0 if fade > 0.0 else -2.0
+	_active.play(from)
+	if fade > 0.0:
+		var tw := create_tween()
+		tw.tween_property(_active, "volume_db", -2.0, fade)
+	if old.playing:
+		var tw2 := create_tween()
+		tw2.tween_property(old, "volume_db", -50.0, maxf(fade, 0.2))
+		tw2.tween_callback(old.stop)
+
+func stop_music(fade := 1.5) -> void:
+	clip_id = ""
+	_ended = true
+	if virtual_clock or not _active.playing:
+		return
+	var p := _active
 	var tw := create_tween()
-	tw.tween_property(_act2, "volume_db", -6.0, 2.5)
-	finale_done.emit()
+	tw.tween_property(p, "volume_db", -50.0, fade)
+	tw.tween_callback(p.stop)
+
+func duration() -> float:
+	return float(clip.get("duration", 0.0))
+
+func playhead() -> float:
+	if virtual_clock:
+		return _virtual_pos
+	if _active == null or not _active.playing:
+		return _virtual_pos
+	_virtual_pos = _active.get_playback_position() + AudioServer.get_time_since_last_mix()
+	return _virtual_pos
+
+# ---------------------------------------------------------------- beat map
+
+func beat_index(t: float) -> int:
+	# Index of the last beat at or before t, or -1 before the first.
+	return _beats.bsearch(t, false) - 1
+
+func beat_seconds() -> float:
+	if _beats.size() < 2:
+		return 1.0
+	var i := clampi(beat_index(playhead()), 0, _beats.size() - 2)
+	return maxf(_beats[i + 1] - _beats[i], 0.2)
+
+func beat_phase() -> float:
+	if _beats.size() < 2:
+		return fposmod(playhead(), 1.0)
+	var t := playhead()
+	var i := clampi(beat_index(t), 0, _beats.size() - 2)
+	return clampf((t - _beats[i]) / maxf(_beats[i + 1] - _beats[i], 0.01), 0.0, 1.0)
+
+func bar_phase() -> float:
+	# Four beats to the bar. A barline is not known for every piece, so this is only a slow
+	# clock for gestures, never something a user is judged against.
+	var i := maxi(beat_index(playhead()), 0)
+	return (float(i % 4) + beat_phase()) / 4.0
+
+func nearest_beat_error(t: float) -> float:
+	# Absolute distance to the nearest beat, as a fraction of one beat (0 .. 0.5).
+	if _beats.size() < 2:
+		return 0.5
+	var i := clampi(beat_index(t), 0, _beats.size() - 2)
+	var span := maxf(_beats[i + 1] - _beats[i], 0.01)
+	return minf(absf(t - _beats[i]), absf(_beats[i + 1] - t)) / span
+
+func env_at(t: float) -> float:
+	if _env.is_empty():
+		return 0.0
+	var x := t * float(clip.get("env_rate", 10))
+	var i := clampi(int(x), 0, _env.size() - 1)
+	var j := mini(i + 1, _env.size() - 1)
+	return lerpf(_env[i], _env[j], clampf(x - float(i), 0.0, 1.0))
+
+# ---------------------------------------------------------------- SFX on the grid
 
 func timing_mode_name() -> String:
 	return TIMING_MODES[timing_mode]
@@ -77,51 +156,23 @@ func cycle_timing() -> void:
 	timing_mode = (timing_mode + 1) % TIMING_MODES.size()
 	_next_grid = -1.0
 
-func _active_track() -> Dictionary:
-	return TRACKS["act4"] if act4_active else TRACKS["act2"]
-
-func _playhead() -> float:
-	var p: AudioStreamPlayer = _act4 if act4_active else _act2
-	return p.get_playback_position() + AudioServer.get_time_since_last_mix()
-
-func beat_seconds() -> float:
-	var bpm: float = _active_track()["bpm"]
-	return 60.0 / bpm
-
-func beat_phase() -> float:
-	# 0..1 across one quarter note, locked to playback position. Drives the corps
-	# de ballet's sway so thousands of swans move on the same beat the SFX land on.
-	var offset: float = _active_track()["offset"]
-	var b := beat_seconds()
-	return fposmod(_playhead() - offset, b) / b
-
-func bar_phase() -> float:
-	# 0..1 across four beats — slower gestures (a wing lift) want the bar, not the beat
-	var offset: float = _active_track()["offset"]
-	var bar := beat_seconds() * 4.0
-	return fposmod(_playhead() - offset, bar) / bar
-
 func grid_seconds() -> float:
-	# NOTE: Dictionary values are untyped, so every read needs an explicit
-	# annotation — `:=` inference fails to compile (KB: godot-pico-apk-pipeline #6).
-	var bpm: float = _active_track()["bpm"]
-	return 60.0 / bpm / (2.0 if timing_mode == 0 else 1.0)
+	return beat_seconds() / (2.0 if timing_mode == 0 else 1.0)
 
 func schedule_sfx(cb: Callable) -> void:
-	# quantize one-shot SFX to the next beat subdivision so they land in rhythm
-	if timing_mode == 2:  # free — fire immediately, no grid
+	# Quantize one-shot SFX to the next subdivision, so they land in rhythm with the recording.
+	if timing_mode == 2 or clip_id == "":
 		cb.call()
 		return
 	if _sfx_queue.size() < 3:
 		_sfx_queue.append(cb)
 
 func _flush_grid() -> void:
-	# Grid is derived from the PLAYBACK POSITION, not a free-running accumulator:
-	# v2's clock drifted out of phase with the music within a minute.
 	var g := grid_seconds()
-	var offset: float = _active_track()["offset"]
-	var pos: float = _playhead() - offset
-	var boundary: float = (floorf(pos / g) + 1.0) * g
+	var pos := playhead()
+	var i := clampi(beat_index(pos), 0, maxi(_beats.size() - 1, 0))
+	var base: float = _beats[i] if not _beats.is_empty() else 0.0
+	var boundary: float = base + (floorf((pos - base) / g) + 1.0) * g
 	if _next_grid < 0.0:
 		_next_grid = boundary
 		return
@@ -131,14 +182,20 @@ func _flush_grid() -> void:
 		_sfx_queue.clear()
 		_next_grid = boundary
 
+func tick_virtual(delta: float) -> void:
+	_virtual_pos += delta
+
 func _process(delta: float) -> void:
-	_flush_grid()
-	if _spectrum == null:
-		return
-	var mag := _spectrum.get_magnitude_for_frequency_range(60.0, 2200.0,
-		AudioEffectSpectrumAnalyzerInstance.MAGNITUDE_AVERAGE)
-	var raw := clampf((mag.x + mag.y) * 18.0, 0.0, 1.4)
+	if virtual_clock and clip_id != "":
+		_virtual_pos += delta
+	var t := playhead()
+	if clip_id != "":
+		_flush_grid()
+	var raw := env_at(t) if clip_id != "" else 0.0
 	energy = lerpf(energy, raw, clampf(delta * 3.5, 0.0, 1.0))
 	_peak_avg = lerpf(_peak_avg, energy, clampf(delta * 0.25, 0.0, 1.0))
-	swell_flag = energy > _peak_avg * 1.55 and energy > 0.28 and _prev_energy <= _peak_avg * 1.55
+	swell_flag = energy > _peak_avg * SWELL_RATIO and energy > 0.28 and _prev_energy <= _peak_avg * SWELL_RATIO
 	_prev_energy = energy
+	if clip_id != "" and not _ended and not _loop and t >= duration() - 0.03:
+		_ended = true
+		clip_finished.emit(clip_id)

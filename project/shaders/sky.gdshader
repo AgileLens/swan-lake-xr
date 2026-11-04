@@ -17,6 +17,8 @@ uniform float aurora_intensity = 0.0;  // per mood
 uniform vec3 aurora_a : source_color = vec3(0.18, 0.95, 0.55);
 uniform vec3 aurora_b : source_color = vec3(0.55, 0.30, 0.95);
 uniform float music_energy = 0.0;
+uniform float is_sun = 0.0;      // 0 moon .. 1 sun: disc, halo and horizon glow change character
+uniform float flash = 0.0;       // lightning: a brief lift of the clouds, never a strobe
 // Perf-governable: the aurora alone is up to 7 fbm() calls per pixel (5 octaves
 // each = ~35 vnoise evaluations), full-screen, every frame. Never gated by the
 // perf governor's original ladder (corps/fireflies/reflections/shadows/sparkles/
@@ -126,17 +128,19 @@ void sky() {
 		c *= smoothstep(0.015, 0.16, d.y);
 		// silver lining: brighter where the cloud faces the moon
 		float ml = pow(clamp(dot(d, mdir) * 0.5 + 0.5, 0.0, 1.0), 3.0);
-		vec3 lit = cloud_tint * (0.55 + 1.35 * ml);
+		vec3 lit = cloud_tint * (0.55 + 1.35 * ml) + vec3(0.55, 0.62, 0.80) * flash;
 		float core = smoothstep(0.55, 0.95, dens);  // dense core keeps some body
 		col = mix(col, mix(lit, cloud_tint * 0.35, core * 0.6), clamp(c, 0.0, 1.0) * 0.92);
 	}
 
 	// moon disc + halo, light maria texture
 	float ang = acos(clamp(dot(d, mdir), -1.0, 1.0));
-	float disc = smoothstep(moon_size, moon_size * 0.72, ang);
-	float maria = 1.0 - 0.22 * hash3(floor(d * 300.0)) * disc;
-	float glow = exp(-ang * 9.0) * 0.35 + exp(-ang * 2.5) * 0.08;
-	col += moon_color * (disc * 1.7 * maria + glow);
+	float disc_size = mix(moon_size, moon_size * 0.8, is_sun);
+	float disc = smoothstep(disc_size, disc_size * 0.72, ang);
+	float maria = 1.0 - 0.22 * hash3(floor(d * 300.0)) * disc * (1.0 - is_sun);
+	float glow = mix(exp(-ang * 9.0) * 0.35 + exp(-ang * 2.5) * 0.08,
+		exp(-ang * 14.0) * 0.8 + exp(-ang * 3.2) * 0.34, is_sun);
+	col += moon_color * (disc * mix(1.7, 7.0, is_sun) * maria + glow);
 	col = max(col, vec3(0.0));
 	COLOR = col;
 }

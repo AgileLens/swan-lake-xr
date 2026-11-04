@@ -15,6 +15,7 @@ var grace := 8.0  # let startup settle
 var enabled := true
 var _log_t := 0
 var _sky_cheap := false
+var _lod_shed := false
 # Once every rung is exhausted, stop calling _step_down() forever — on real
 # device hardware tonight this ran to tier=404+ with zero effect because fps
 # was pinned below target by a cost nothing in the ladder touched (the sky
@@ -83,6 +84,11 @@ func _step_down() -> void:
 	# reflection ladder is exhausted — otherwise one notch would skip a rung.
 	if main.reflections.mode >= 2:
 		main.reflections.apply(main.reflections.mode - 1)
+		return
+	# Hero bird detail: leans on the imported mesh LODs. Hard to see at swimming distance.
+	if not _lod_shed:
+		_lod_shed = true
+		get_viewport().mesh_lod_threshold = 4.0
 		return
 	# The sky (cloud deck + aurora, both multi-octave fbm, full-screen, every
 	# frame) was never gated by anything above and turned out to be the real

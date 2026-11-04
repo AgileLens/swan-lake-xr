@@ -103,6 +103,16 @@ func start_show() -> void:
 	show_on = true
 	show_timer = 0.5
 
+func climax() -> void:
+	# The last pages of the 1812: everything goes up.
+	finale_barrage_left = 12
+	show_timer = 0.0
+
+func start_curtain(count: int) -> void:
+	show_on = false
+	finale_barrage_left = count
+	show_timer = 2.5
+
 func stop_show(with_barrage := true) -> void:
 	show_on = false
 	if with_barrage:
@@ -132,7 +142,7 @@ func _process(delta: float) -> void:
 	if show_on and main.music.act4_active:
 		show_timer -= delta
 		if show_timer <= 0.0 and main.music.energy > 0.30:
-			show_timer = randf_range(1.5, 2.7)
+			show_timer = randf_range(1.2, 2.4) / (0.6 + main.music.energy)
 			launch(Vector3(randf_range(-11, 11), 0, randf_range(-26, -13)))
 	if finale_barrage_left > 0:
 		show_timer -= delta
@@ -143,5 +153,5 @@ func _process(delta: float) -> void:
 
 func try_manual(at: Vector3) -> void:
 	if manual_cooldown <= 0.0 and at != Vector3.INF:
-		manual_cooldown = 1.1
+		manual_cooldown = 0.5
 		launch(at)

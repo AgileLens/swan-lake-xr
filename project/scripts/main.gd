@@ -7,7 +7,7 @@ extends Node3D
 const LAKE_CENTER := Vector3(0, 0, -10)
 const HANDS := ["left", "right"]
 # Shown on the intro card so the running build is identifiable in-headset.
-const BUILD_TAG := "v4 · 2026-07-31"
+const BUILD_TAG := "v5 · 2026-11-04"
 
 var t := 0.0
 var xr_active := false
@@ -39,6 +39,13 @@ var menu: OrbMenu
 var megaflock: MegaFlock
 var reflections: ReflectionRig
 var perf: PerfGovernor
+var program: ConductorsProgram
+var stand: MusicStand
+var rainbow: Rainbow
+var storm: StormKit
+var feathers: FeatherFall
+var env_mat: ShaderMaterial
+var lead_ring_until := 0.0
 var hand_input  # HandInput — untyped: a new class_name isn't in the global class
                 # cache until an editor pass, so don't depend on it resolving
 
@@ -53,8 +60,7 @@ var beam_alpha := 0.0
 func _ready() -> void:
 	_build_environment()
 	_build_water()
-	_build_dock()
-	_build_shore()
+	_build_scenery()
 	_build_beam()
 	_init_xr_or_preview()
 	hand_input = load("res://scripts/hand_input.gd").new(); add_child(hand_input)
@@ -68,7 +74,6 @@ func _ready() -> void:
 	megaflock = MegaFlock.new(); add_child(megaflock)
 	megaflock.setup(self)
 	music = MusicDirector.new(); add_child(music)
-	music.finale_done.connect(_on_finale_done)
 	conductor = Conductor.new(); add_child(conductor)
 	conductor.setup(self)
 	fireflies = FireflyField.new(); add_child(fireflies)
@@ -85,6 +90,12 @@ func _ready() -> void:
 	constellation.setup(self)
 	nest = SwanNest.new(); add_child(nest)
 	nest.setup(self)
+	rainbow = Rainbow.new(); add_child(rainbow)
+	rainbow.setup(self)
+	storm = StormKit.new(); add_child(storm)
+	storm.setup(self)
+	feathers = FeatherFall.new(); add_child(feathers)
+	feathers.setup(self)
 	reflections = ReflectionRig.new(); add_child(reflections)
 	reflections.setup(self)
 	perf = PerfGovernor.new(); add_child(perf)
@@ -93,9 +104,14 @@ func _ready() -> void:
 	menu.setup(self)
 	mood = MoodKit.new(); add_child(mood)
 	mood.setup(self)
-	mood.apply("night", true)
+	mood.apply("predawn", true)
 	title = TitleCards.new(); add_child(title)
 	title.setup(self)
+	stand = MusicStand.new(); add_child(stand)
+	stand.setup(self)
+	program = ConductorsProgram.new(); add_child(program)
+	program.setup(self)
+	_launch_mode()
 
 # ---------------------------------------------------------------- scene build
 
@@ -154,6 +170,22 @@ func _aim_moon(dir_to_moon: Vector3) -> void:
 func moon_dir() -> Vector3:
 	return Vector3(sky_mat.get_shader_parameter("moon_dir"))
 
+func _launch_mode() -> void:
+	# Only one of these runs. Everything else is a developer tool that never ships a flow.
+	var args := OS.get_cmdline_user_args()
+	for mode in [["--swanlab", "res://scripts/swan_lab.gd"], ["--autotest", "res://scripts/autotest.gd"],
+			["--stills", "res://scripts/stills.gd"], ["--clip", "res://scripts/clips.gd"]]:
+		for a in args:
+			if a == mode[0] or a.begins_with(mode[0] + "="):
+				var tool: Node = load(mode[1]).new()
+				add_child(tool)
+				tool.setup(self)
+				return
+	# The real thing: the title card plays, then the program starts on its own.
+	get_tree().create_timer(9.0).timeout.connect(func():
+		if program.state == ConductorsProgram.State.IDLE:
+			program.start())
+
 func _build_water() -> void:
 	var mesh := PlaneMesh.new()
 	mesh.size = Vector2(240, 240)
@@ -168,75 +200,21 @@ func _build_water() -> void:
 	mi.layers = 1 | 2
 	add_child(mi)
 
-func _build_dock() -> void:
-	var wood := StandardMaterial3D.new()
-	wood.albedo_color = Color(0.16, 0.11, 0.08)
-	wood.roughness = 0.95
-	var deck := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = Vector3(2.4, 0.1, 4.0)
-	deck.mesh = bm
-	deck.material_override = wood
-	deck.position = Vector3(0, 0.30, 0.6)
-	add_child(deck)
-	for i in 6:
-		var post := MeshInstance3D.new()
-		var cm := CylinderMesh.new()
-		cm.top_radius = 0.07
-		cm.bottom_radius = 0.08
-		cm.height = 0.9
-		post.mesh = cm
-		post.material_override = wood
-		var sx: float = (1.1 if i % 2 == 0 else -1.1)
-		post.position = Vector3(sx, 0.12, 0.6 - 1.7 + float(i / 2) * 1.7)
-		add_child(post)
+func _build_scenery() -> void:
+	# Dock, banks, forest and reeds come from assets_src/make_env.py as one vertex-colored
+	# set, so the shore holds up in daylight and stays a handful of draw calls.
+	var scene: PackedScene = load("res://assets/env/env.glb")
+	var inst: Node3D = scene.instantiate()
+	env_mat = ShaderMaterial.new()
+	env_mat.shader = load("res://shaders/env.gdshader")
+	_dress_env(inst)
+	add_child(inst)
 
-func _build_shore() -> void:
-	var dark := StandardMaterial3D.new()
-	dark.albedo_color = Color(0.015, 0.02, 0.03)
-	dark.roughness = 1.0
-	dark.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 7
-	for i in 10:
-		var a := TAU * float(i) / 10.0 + rng.randf_range(-0.15, 0.15)
-		var r := rng.randf_range(70.0, 95.0)
-		var hill := MeshInstance3D.new()
-		var sm := SphereMesh.new()
-		sm.radius = rng.randf_range(18, 34)
-		sm.height = rng.randf_range(7, 14)
-		hill.mesh = sm
-		hill.material_override = dark
-		hill.position = LAKE_CENTER + Vector3(cos(a) * r, -0.5, sin(a) * r)
-		add_child(hill)
-	for i in 26:
-		var a := rng.randf_range(0.0, TAU)
-		if absf(wrapf(a - PI * 0.5, -PI, PI)) < 0.85:
-			continue
-		var r := rng.randf_range(46.0, 62.0)
-		var pine := MeshInstance3D.new()
-		var cm := CylinderMesh.new()
-		cm.top_radius = 0.0
-		cm.bottom_radius = rng.randf_range(1.2, 2.2)
-		cm.height = rng.randf_range(4.0, 8.0)
-		pine.mesh = cm
-		pine.material_override = dark
-		pine.position = LAKE_CENTER + Vector3(cos(a) * r, cm.height * 0.4, sin(a) * r)
-		add_child(pine)
-	for i in 14:
-		var reed := MeshInstance3D.new()
-		var cm2 := CylinderMesh.new()
-		cm2.top_radius = 0.005
-		cm2.bottom_radius = 0.016
-		cm2.height = rng.randf_range(0.4, 0.8)
-		reed.mesh = cm2
-		reed.material_override = dark
-		var side: float = (1.0 if i % 2 == 0 else -1.0)
-		reed.position = Vector3(side * rng.randf_range(1.5, 2.4), cm2.height * 0.40, rng.randf_range(-0.9, 0.7))
-		reed.rotation.z = rng.randf_range(-0.10, 0.10) * side
-		reed.set_meta("sway0", reed.rotation.z)
-		add_child(reed)
-		reeds.append(reed)
+func _dress_env(n: Node) -> void:
+	if n is MeshInstance3D:
+		(n as MeshInstance3D).material_override = env_mat
+	for c in n.get_children(true):
+		_dress_env(c)
 
 func _build_beam() -> void:
 	beam = MeshInstance3D.new()
@@ -275,7 +253,11 @@ func _place_beam() -> void:
 
 func _init_xr_or_preview() -> void:
 	var args := OS.get_cmdline_user_args()
-	var force_preview: bool = ("--shot" in args) or ("--preview" in args) \
+	var dev_mode := false
+	for a in args:
+		if a.begins_with("--autotest") or a.begins_with("--stills") or a.begins_with("--clip") or a == "--swanlab":
+			dev_mode = true
+	var force_preview: bool = ("--shot" in args) or ("--preview" in args) or dev_mode \
 		or (OS.get_name() == "macOS" and not ("--xr" in args))
 	var xr := XRServer.find_interface("OpenXR")
 	if not force_preview and xr and xr.is_initialized():
@@ -321,19 +303,7 @@ func _on_xr_button(button: String, c: XRController3D, pressed: bool) -> void:
 	if pressed:
 		match button:
 			"trigger_click":
-				title.skip_intro()
-				if menu.try_tap(c):
-					return
-				if constellation.try_tap(c):
-					return
-				if nest.try_tap(c):
-					return
-				if is_right:
-					var hit := _aim_hit(c)
-					if hit != Vector3.INF:
-						do_ripple(hit, 0.85)
-				else:
-					fireworks.try_manual(_aim_hit(c))
+				press_primary(hand_input.pose(hand_of(c)), is_right)
 			"grip_click":
 				var hit := _aim_hit(c)
 				if hit != Vector3.INF:
@@ -346,12 +316,12 @@ func _on_xr_button(button: String, c: XRController3D, pressed: bool) -> void:
 					weather.cycle()
 			"by_button":
 				if is_right:
-					trigger_finale()
+					program.next_movement()
 				else:
 					menu.toggle()
 			"primary_click":
 				if not menu.open:  # stick doubles as the baton tuner while the menu is up
-					trigger_finale()  # thumbstick fallback so the finale is never unreachable
+					program.next_movement()
 	else:
 		if button == "grip_click":
 			set_gather(false)
@@ -359,6 +329,44 @@ func _on_xr_button(button: String, c: XRController3D, pressed: bool) -> void:
 # With no controllers in hand there are no buttons, so pinch carries the verbs:
 # right pinch = conduct (the trigger), left pinch = firework, both = gather.
 # Without this, putting the controllers down left the piece completely inert.
+# Trigger, right pinch and left-click all arrive here, so every input conducts the same.
+func press_primary(pose: Transform3D, is_right: bool) -> void:
+	title.skip_intro()
+	if stand.try_tap(pose):
+		return
+	if menu.try_tap(pose):
+		return
+	if constellation.try_tap(pose):
+		return
+	if nest.try_tap(pose):
+		return
+	if is_right:
+		var hit := _aim_hit_pose(pose)
+		if hit != Vector3.INF:
+			do_ripple(hit, 0.85)
+		program.on_downbeat(0.6, true)
+	else:
+		fireworks.try_manual(_aim_hit_pose(pose))
+
+func baton_aim_pose() -> Transform3D:
+	# The pose a press acts from. Same value the visuals use.
+	if xr_active:
+		return hand_input.pose("right")
+	var h := head_transform()
+	var tip: Vector3 = conductor.tip_position()
+	if tip == Vector3.ZERO:
+		return h
+	return Transform3D(Basis.looking_at((tip - h.origin).normalized(), Vector3.UP), h.origin)
+
+func baton_water_point() -> Vector3:
+	return _aim_hit_pose(baton_aim_pose())
+
+func set_reticle_lead(p: Vector3) -> void:
+	# The Regatta's lead point shows on the water, so you can see what the line is chasing.
+	lead_ring_until = t + 0.25
+	reticle.visible = true
+	reticle.position = Vector3(p.x, water_height(p.x, p.z) + 0.03, p.z)
+
 func _bare_hand_gestures() -> void:
 	var lb: bool = hand_input.bare("left")
 	var rb: bool = hand_input.bare("right")
@@ -375,25 +383,12 @@ func _bare_hand_gestures() -> void:
 	if both:
 		return
 	if rb and hand_input.pinch_just_pressed("right"):
-		title.skip_intro()
-		var hit: Vector3 = _aim_hit_pose(hand_input.pose("right"))
-		if hit != Vector3.INF:
-			do_ripple(hit, 0.85)
+		press_primary(hand_input.pose("right"), true)
 	if lb and hand_input.pinch_just_pressed("left"):
-		fireworks.try_manual(_aim_hit_pose(hand_input.pose("left")))
+		press_primary(hand_input.pose("left"), false)
 
 func trigger_finale() -> void:
-	if music.act4_active:
-		return
-	music.play_finale()
-	megaflock.finale_swell()
-	fireworks.start_show()
-	fishes.ballet()
-
-func _on_finale_done() -> void:
-	megaflock.relax()
-	fireworks.stop_show(true)
-	title.outro()
+	program.next_movement()
 
 func _aim_hit(c: XRController3D) -> Vector3:
 	return _aim_hit_pose(hand_input.pose(hand_of(c)))
@@ -472,6 +467,8 @@ func _process(delta: float) -> void:
 	ripples.tick(t)
 	var e: float = music.energy
 	water_mat.set_shader_parameter("music_energy", e)
+	flock.attract_active = t < attract_until
+	flock.attract_point = attract_point
 	var target_a := 0.16 if gather_on else 0.0
 	beam_alpha = lerpf(beam_alpha, target_a, delta * 3.0)
 	beam_mat.set_shader_parameter("alpha", beam_alpha * (1.0 + e * 0.7))
@@ -479,11 +476,14 @@ func _process(delta: float) -> void:
 		beam.visible = false
 	if gather_on:
 		gather_held += delta
-		if gather_held > 4.0 and not finale_fired_this_gather and not music.act4_active:
+		# After the program, a long gather still calls for the fireworks, as it always has.
+		if gather_held > 4.0 and not finale_fired_this_gather and program.state == ConductorsProgram.State.FREE:
 			finale_fired_this_gather = true
-			trigger_finale()
+			program.encore()
 	if xr_active:
 		_bare_hand_gestures()
+		if t < lead_ring_until:
+			return
 		var best := Vector3.INF
 		for hand in HANDS:
 			if not hand_input.active(hand):
@@ -499,8 +499,6 @@ func _process(delta: float) -> void:
 			(reticle.material_override as StandardMaterial3D).albedo_color.a = pulse
 		else:
 			reticle.visible = false
-	flock.attract_active = t < attract_until
-	flock.attract_point = attract_point
 
 func set_reticle_preview(pos: Vector3, show: bool) -> void:
 	reticle.visible = show
