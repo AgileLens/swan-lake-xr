@@ -134,6 +134,10 @@ func _finish_movement() -> void:
 		_state_t = BOW_TIME
 		return
 	var g: float = score.grade() if score else ConductLogic.GRADE_FLOOR
+	if movement["verb"] == "stars":
+		# Skipped early or not, Cygnus finishes, so the nest and the cygnet still get their moment.
+		for i in main.constellation.lit.size():
+			main.constellation.light_next()
 	if not _encore_used:
 		grades.append(g)
 	movement_ended.emit(index, g)

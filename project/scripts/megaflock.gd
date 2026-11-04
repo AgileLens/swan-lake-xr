@@ -38,6 +38,7 @@ func setup(m) -> void:
 	# per-instance cost nobody would ever see clearly.
 	near_mmi = _make_mmi("res://assets/swan/swan_corps_near.glb")
 	far_mmi = _make_mmi("res://assets/swan/swan_corps_far.glb")
+	far_mmi.layers = 2  # the far ranks are a sliver in the water, so skip them in reflection passes
 	# Audience visible from first launch — the audience/chorus work is
 	# otherwise invisible unless someone opens the orb menu, which a demo guest
 	# won't know to do. The governor can still shed it under load.
@@ -59,6 +60,7 @@ func _make_mmi(glb: String) -> MultiMeshInstance3D:
 	mmi.multimesh = mm
 	mmi.material_override = _shader_mat
 	mmi.visible = false
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	main.add_child(mmi)
 	return mmi
 

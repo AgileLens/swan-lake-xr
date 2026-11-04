@@ -213,7 +213,11 @@ func _build_scenery() -> void:
 
 func _dress_env(n: Node) -> void:
 	if n is MeshInstance3D:
-		(n as MeshInstance3D).material_override = env_mat
+		var mi := n as MeshInstance3D
+		mi.material_override = env_mat
+		# Only the dock is close enough to cast a shadow anyone would notice.
+		if not mi.name.begins_with("Dock"):
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for c in n.get_children(true):
 		_dress_env(c)
 

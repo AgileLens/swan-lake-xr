@@ -7,7 +7,7 @@ extends RefCounted
 # from things that accumulate, so wild flailing can't cost a beginner anything.
 
 const GRADE_FLOOR := 0.22
-const ON_BEAT := 0.24         # within this fraction of a beat counts as on the beat
+const ON_BEAT := 0.17         # within this fraction of a beat counts as on the beat
 const ICTUS_MIN_GAP := 0.22
 const ICTUS_MIN_SPEED := 0.22 # m/s of downward motion before a turnaround counts as a beat
 

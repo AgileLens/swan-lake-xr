@@ -17,8 +17,8 @@
 # Output in project/assets/swan/:
 #   swan_hero.glb        skinned body (bones N1..N8, Head, Jaw) and rigid WingL/WingR/Tail
 #                        with Arch and Spread blend shapes on the wings
-#   swan_corps_near.glb  static merged mesh, around 900 tris, for the near ranks
-#   swan_corps_far.glb   static merged mesh, around 200 tris, for the far ranks
+#   swan_corps_near.glb  static merged mesh, around 760 tris, for the near ranks
+#   swan_corps_far.glb   static merged mesh, around 170 tris, for the far ranks
 #   swan_albedo.png, swan_normal.png, feather_detail.png
 import bpy, bmesh, math, os, sys
 import numpy as np
@@ -858,8 +858,8 @@ def corps_mesh(name, tris, wing_tris_ratio):
     print("[swan]", name, "tris", sum(len(p.vertices) - 2 for p in merged.data.polygons))
     return merged
 
-near = corps_mesh("SwanCorpsNear", 1400, 1.0)
-far = corps_mesh("SwanCorpsFar", 300, 1.0)
+near = corps_mesh("SwanCorpsNear", 760, 1.0)
+far = corps_mesh("SwanCorpsFar", 170, 1.0)
 
 def export(objs, path, skins=False, morph=False):
     bpy.ops.object.select_all(action="DESELECT")

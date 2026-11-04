@@ -84,9 +84,8 @@ func _drive(delta: float) -> void:
 	var music = main.music
 	var phase: float = music.beat_phase()
 	# A real conducting stroke: fall to the ictus on the beat, rebound up.
-	var fall := -cos(phase * TAU) * 0.5 + 0.5
-	var pos: Vector3 = _head() + Vector3(0.22, -0.32 + (1.0 - fall) * 0.0, -0.6)
-	var stroke := absf(0.5 - phase) * 2.0 * 0.28
+	var pos: Vector3 = _head() + Vector3(0.22, -0.32, -0.6)
+	var stroke := (0.5 - absf(0.5 - phase)) * 2.0 * 0.28  # lowest at the beat, highest between
 	pos.y += stroke
 	match verb:
 		"raise":
@@ -155,6 +154,7 @@ func _finish() -> void:
 		expect("your downstrokes called lightning", main.storm.player_strikes >= 3, str(main.storm.player_strikes))
 		expect("you lit stars yourself", int(_result.get("stars", 0)) >= 5, str(_result.get("stars", 0)))
 		_compare_with("off", true)
+		_compare_with("wild", true)
 		expect("a full performance earned more than warm applause", int(_result.get("tier", 0)) >= 2, str(_result))
 	if mode == "off":
 		expect("nobody conducting still gets the bow", int(_result.get("tier", -1)) >= 0)

@@ -56,7 +56,7 @@ func _process(delta: float) -> void:
 		get_tree().quit()
 		return
 	var phase: float = main.music.beat_phase()
-	var stroke := absf(0.5 - phase) * 2.0 * 0.20
+	var stroke := (0.5 - absf(0.5 - phase)) * 2.0 * 0.20
 	var head: Vector3 = main.head_transform().origin
 	var sweep := sin(_t * 0.42) * 0.42
 	main.conductor.desktop_tip = head + Vector3(sweep, -0.02 + stroke, -1.0)

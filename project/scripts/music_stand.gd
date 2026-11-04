@@ -113,8 +113,16 @@ func setup(m) -> void:
 	sheet.add_child(next_orb)
 	next_l = _text(11, Vector3(0.236, -0.128, 0.01), Color(0.72, 0.68, 0.58))
 	next_l.text = "next"
+	_main_view_only(root)
 	fit_to_head()
 	show_title()
+
+func _main_view_only(n: Node) -> void:
+	# Reflection cameras only see layer 1. Nobody needs to read the score in the lake.
+	if n is VisualInstance3D:
+		(n as VisualInstance3D).layers = 2
+	for c in n.get_children():
+		_main_view_only(c)
 
 func _text(size: int, pos: Vector3, c: Color) -> Label3D:
 	var l := Label3D.new()
@@ -201,11 +209,22 @@ func show_free() -> void:
 func aimed_next(t: Transform3D) -> bool:
 	var dir := -t.basis.z
 	var to := next_orb.global_position - t.origin
-	return to.length() < 1.6 and dir.angle_to(to.normalized()) < deg_to_rad(6.0)
+	return to.length() < 1.6 and dir.angle_to(to.normalized()) < deg_to_rad(5.0)
+
+var _armed_until := -1.0
 
 func try_tap(t: Transform3D) -> bool:
+	# Two taps: a conductor's hand passes over the stand all the time, and one stray downbeat
+	# must never throw away a movement someone is in the middle of.
 	if not aimed_next(t):
 		return false
+	if main.t > _armed_until:
+		_armed_until = main.t + 2.5
+		next_l.text = "tap again"
+		main.audio.play2d("chime_2", -14.0)
+		return true
+	_armed_until = -1.0
+	next_l.text = "next"
 	main.audio.play2d("chime_3", -10.0)
 	main.program.next_movement()
 	return true
