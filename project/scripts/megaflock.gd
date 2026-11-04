@@ -50,7 +50,7 @@ func _make_mmi(glb: String) -> MultiMeshInstance3D:
 	var inst: Node3D = scene.instantiate()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_bake(inst, inst.global_transform.affine_inverse(), st)
+	_bake(inst, Transform3D(), st)
 	inst.queue_free()
 	var mesh := st.commit()
 	var mm := MultiMesh.new()
@@ -65,13 +65,14 @@ func _make_mmi(glb: String) -> MultiMeshInstance3D:
 	main.add_child(mmi)
 	return mmi
 
-func _bake(node: Node, root_inv: Transform3D, st: SurfaceTool) -> void:
+func _bake(node: Node, parent_xf: Transform3D, st: SurfaceTool) -> void:
+	# The instance isn't in the tree here, so transforms accumulate by hand.
+	var xf: Transform3D = parent_xf * (node as Node3D).transform if node is Node3D else parent_xf
 	if node is MeshInstance3D and node.mesh:
-		var xf: Transform3D = node.global_transform
 		for s in node.mesh.get_surface_count():
 			st.append_from(node.mesh, s, xf)
 	for c in node.get_children():
-		_bake(c, root_inv, st)
+		_bake(c, xf, st)
 
 # The program asks for a crowd size; the performance governor caps what it can have.
 var max_level := COUNTS.size() - 1

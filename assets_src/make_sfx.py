@@ -3,7 +3,7 @@
 import numpy as np, wave, os
 
 SR = 22050
-OUT = "/Users/alex/dev/swan-lake-xr/project/assets/sfx"
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "project", "assets", "sfx")
 os.makedirs(OUT, exist_ok=True)
 rng = np.random.default_rng(7)
 

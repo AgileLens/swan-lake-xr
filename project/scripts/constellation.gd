@@ -138,10 +138,12 @@ func _complete() -> void:
 			mm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 			mm.albedo_color = Color(0.7, 0.85, 1.0, 0.22)
 			line.material_override = mm
+			# Into the tree before look_at. Outside it, look_at does nothing, and every line of the
+			# constellation stood upright instead of joining its stars.
+			main.add_child(line)
 			line.position = (a + b) * 0.5
 			line.look_at(b, Vector3.UP)
 			line.rotate_object_local(Vector3.RIGHT, PI / 2)
-			main.add_child(line)
 	_shooting_star()
 	main.flock.request_flyby()
 	main.nest.enable_glow()

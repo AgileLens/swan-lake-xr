@@ -38,7 +38,7 @@ var _fine_dirty := false
 # source (HandInput.bare()) — no third mechanism to disagree with the other two.
 var skin_mesh := {}      # hand -> Node3D (the Humanoid scene instance)
 var skin_modifier := {}  # hand -> XRHandModifier3D
-var mitten := {}         # hand -> Node3D (the procedural hands.glb instance)
+var mitten := {}         # hand -> Node3D (the posed glove and baton, for held controllers)
 
 func setup(m) -> void:
 	main = m
@@ -156,6 +156,8 @@ func _add_sleeve(root: Node3D, wrist: Vector3) -> void:
 	cm.height = 0.04
 	cm.radial_segments = 14
 	cm.rings = 1
+	cm.cap_top = false
+	cm.cap_bottom = false
 	cuff.mesh = cm
 	var white := StandardMaterial3D.new()
 	white.albedo_color = Color(0.92, 0.91, 0.88)
@@ -167,8 +169,8 @@ func _add_sleeve(root: Node3D, wrist: Vector3) -> void:
 	root.add_child(cuff)
 	var coat := MeshInstance3D.new()
 	var sm := CylinderMesh.new()
-	sm.top_radius = 0.040
-	sm.bottom_radius = 0.046
+	sm.top_radius = 0.050   # the elbow end: rotated below, the cylinder's top points back up the arm
+	sm.bottom_radius = 0.040
 	sm.height = 0.22
 	sm.radial_segments = 14
 	sm.rings = 1

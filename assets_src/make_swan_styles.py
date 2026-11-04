@@ -1,4 +1,4 @@
-# Swan style ladder: 4 GLBs, same node contract (Body root > NeckHead/WingL/WingR/TailFan).
+# Origami alternate (style 0) still ships; the other tiers are retired. Same node contract (Body root > NeckHead/WingL/WingR/TailFan).
 # 0 origami (flat-shaded blocky) · 1 lowpoly (charming stitched spheres, the v1 look)
 # 2 organic (smooth metaballs)   · 3 detailed (dense metaballs + layered feather wings)
 # Every style is scale-normalized so the Body spans the same length -> flock scale is stable.
@@ -6,7 +6,8 @@
 import bpy, bmesh, math
 from mathutils import Vector, Euler
 
-OUTDIR = "/Users/alex/dev/swan-lake-xr/project/assets"
+import os
+OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "project", "assets")
 TARGET_BODY_LEN = 0.92  # meters along Y (Blender forward) before glTF conversion
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -257,7 +258,7 @@ attach_face(nme, HEAD_LOCAL, smooth=True)
 neck = bpy.data.objects.new("NeckHead", nme); link(neck, parent=body, loc=(0, 0.31, 0.26))
 make_lower_beak(HEAD_LOCAL, neck, smooth=True)
 add_wings_tail(body, smooth=True, feathers=1, petals=3)
-normalize_and_export(body, f"{OUTDIR}/swan_style1.glb")
+# swan_style1 retired: the modeled bird in make_swan_hero.py replaced it.
 
 # ---------- style 2: ORGANIC (smooth metaballs, mild denoise, no shrink) ----------
 body = mball_to_mesh("Body", BODY_BALLS, 0.022, WHITE, decimate=0.75, smooth_iters=3, smooth_factor=0.5)
@@ -266,7 +267,7 @@ attach_face(neck.data, HEAD_LOCAL, smooth=True)
 neck.parent = body; neck.location = NECK_BASE
 make_lower_beak(HEAD_LOCAL, neck, smooth=True)
 add_wings_tail(body, smooth=True, feathers=1, petals=3)
-normalize_and_export(body, f"{OUTDIR}/swan_style2.glb")
+# swan_style2 retired: the modeled bird in make_swan_hero.py replaced it.
 
 # ---------- style 3: DETAILED (dense metaballs + layered feathers + 5-petal tail) ----------
 body = mball_to_mesh("Body", BODY_BALLS, 0.014, WHITE, decimate=None, smooth_iters=2, smooth_factor=0.4)
@@ -275,6 +276,6 @@ attach_face(neck.data, HEAD_LOCAL, smooth=True)
 neck.parent = body; neck.location = NECK_BASE
 make_lower_beak(HEAD_LOCAL, neck, smooth=True)
 add_wings_tail(body, smooth=True, feathers=3, petals=5)
-normalize_and_export(body, f"{OUTDIR}/swan_style3.glb")
+# swan_style3 retired: the modeled bird in make_swan_hero.py replaced it.
 
 print("STYLES_DONE")

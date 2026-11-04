@@ -1,11 +1,12 @@
-# Swan Lake XR asset pass 2: organic metaball swan + fish + conductor hands w/ baton.
+# Only fish.glb still ships from this script. Its swan and mitten were replaced by make_swan_hero.py and the glove.
 # Blender headless: Blender --background --python make_swan_v2.py
 # Exports: swan.glb (Body + NeckHead + WingL/R + TailFan), fish.glb, hands.glb (HandL, HandR+Baton)
 # Convention: face +Y in Blender => -Z forward in Godot.
 import bpy, bmesh, math
 from mathutils import Vector, Euler
 
-OUTDIR = "/Users/alex/dev/swan-lake-xr/project/assets"
+import os
+OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "project", "assets")
 bpy.ops.wm.read_factory_settings(use_empty=True)
 col = bpy.context.scene.collection
 
@@ -192,7 +193,7 @@ beak_lower.location = BEAK_TIP - Vector((0, 0.068, 0.0))
 bpy.ops.object.select_all(action='DESELECT')
 for o in (body, neck, tail, beak_lower, *[o for o in col.objects if o.name.startswith("Wing")]):
     o.select_set(True)
-bpy.ops.export_scene.gltf(filepath=f"{OUTDIR}/swan.glb", export_format='GLB', use_selection=True, export_yup=True, export_apply=True)
+pass  # retired: bpy.ops.export_scene.gltf(filepath=f"{OUTDIR}/swan.glb", export_format='GLB', use_selection=True, export_yup=True, export_apply=True)
 print("SWAN2", sum(len(o.data.polygons) for o in col.objects if o.type == 'MESH' and o.select_get()))
 
 # ================= FISH =================
@@ -260,6 +261,6 @@ baton.rotation_euler = Euler((math.radians(-90+14), 0, 0))  # cone axis +Z->poin
 
 bpy.ops.object.select_all(action='DESELECT')
 for o in (hl, hr, baton): o.select_set(True)
-bpy.ops.export_scene.gltf(filepath=f"{OUTDIR}/hands.glb", export_format='GLB', use_selection=True, export_yup=True, export_apply=True)
+pass  # retired: bpy.ops.export_scene.gltf(filepath=f"{OUTDIR}/hands.glb", export_format='GLB', use_selection=True, export_yup=True, export_apply=True)
 print("HANDS", len(hl.data.polygons) + len(hr.data.polygons) + len(bme.polygons))
 print("ASSETS2_DONE")
