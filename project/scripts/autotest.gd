@@ -11,6 +11,7 @@ var failures: Array[String] = []
 var checks := 0
 var started: Array[String] = []
 var ended := {}
+var awake_after := {}
 var rng := RandomNumberGenerator.new()
 var _t := 0.0
 var _beat_i := 0
@@ -33,7 +34,10 @@ func setup(m) -> void:
 	main.perf.enabled = false
 	main.title.skip_intro()
 	main.program.movement_started.connect(func(i): started.append(ProgramData.MOVEMENTS[i]["id"]))
-	main.program.movement_ended.connect(func(i, g): ended[ProgramData.MOVEMENTS[i]["id"]] = g)
+	main.program.movement_ended.connect(func(i, g):
+		var id: String = ProgramData.MOVEMENTS[i]["id"]
+		ended[id] = g
+		awake_after[id] = main.flock.awake_count())
 	main.program.program_finished.connect(_on_finished)
 	main.program.start()
 	print("[autotest] mode=", mode)
@@ -141,7 +145,8 @@ func _finish() -> void:
 	expect("feathers are falling", main.feathers.p.emitting)
 	expect("the rainbow was painted at some point", main.rainbow.peak_alpha > 0.5, str(main.rainbow.peak_alpha))
 	expect("Cygnus always completes", main.constellation.done, str(main.constellation.count_lit()))
-	expect("all swans are awake", main.flock.awake_count() == 8, str(main.flock.awake_count()))
+	expect("the flock sleeps through the prelude", awake_after.get("prelude", -1) == 0, str(awake_after))
+	expect("Dawn wakes the whole flock", awake_after.get("dawn", -1) == 8, str(awake_after))
 	var grace: float = _result.get("grace", 0.0)
 	expect("grace is at or above the floor", grace >= ConductLogic.GRADE_FLOOR - 0.0001, str(grace))
 	var fp := "res://../out/autotest_%s.json" % mode

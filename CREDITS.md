@@ -4,7 +4,7 @@ Every recording in The Conductor's Program was checked for the **recording's** s
 A composer's death date says nothing about who owns a performance, so "Tchaikovsky is public domain" was never enough.
 
 Each row states what the claim rests on. Hashes and the license text read at download time are written to
-`assets_src/downloads/rights_manifest.json` by `tools/fetch_recordings.py`. The cut times and processing are in
+`assets_src/rights_manifest.json` by `tools/fetch_recordings.py`. The cut times and processing are in
 `tools/make_program_audio.py`. I'm not a lawyer: this is a documented good-faith check, and a rights review is still
 worth doing before a commercial release.
 

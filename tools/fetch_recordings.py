@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Download the program's source recordings from Wikimedia Commons / Internet Archive,
 verifying each file's SHA-1 against the Commons API, and record the license wikitext
-that was read at download time. Output: assets_src/downloads/ and rights_manifest.json."""
+that was read at download time. Output: assets_src/downloads/ (not in git) and assets_src/rights_manifest.json (in git)."""
 import hashlib, json, pathlib, re, sys, urllib.parse, urllib.request
 UA = {"User-Agent": "PicoSwanLakeCreditsCheck/1.0 (info@agilelens.com)"}
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -12,7 +12,6 @@ COMMONS = [
     ("beethoven_storm", "Ludwig van Beethoven - symphony no. 6 in f major 'pastoral', op. 68 - iv. allegro.ogg"),
     ("beethoven_shepherd", "Ludwig van Beethoven - symphony no. 6 in f major 'pastoral', op. 68 - v. allegretto.ogg"),
     ("saintsaens_bokor", "Judith Bokor plays Le Cygne by Saint-Saëns.flac"),
-    ("saintsaens_whitehouse", "20091104 Alisa Weilerstein and Jason Yoder - Saint Saëns' The Swan.ogg"),
     ("smetana_vltava", "Smetana, Má vlast - Vltava - The Moldau.ogg"),
     ("tchaikovsky_1812", "1812 Overture - United States Marine Band.opus"),
 ]
@@ -40,5 +39,8 @@ def main():
             "url": ii["url"].split("?")[0], "sha1": sha, "sha1_ok": sha == ii["sha1"], "license_short": ii["extmetadata"].get("LicenseShortName", {}).get("value", ""),
             "license_templates": re.findall(r"\{\{\s*((?:PD|Cc|CC|cc)[^}]*)\}\}", wt), "wikitext": wt[:1500]}
         print(key, sha == ii["sha1"], path.stat().st_size)
-    (OUT / "rights_manifest.json").write_text(json.dumps(manifest, indent=1, ensure_ascii=False))
+    (ROOT / "assets_src" / "rights_manifest.json").write_text(json.dumps(manifest, indent=1, ensure_ascii=False))
 main()
+# The Office of War Information disc lives on the Internet Archive, not Commons. Fetch it by hand:
+#   curl -L -o assets_src/downloads/owi_swanlake.flac \
+#     "https://archive.org/download/78_swan-lake_tschaikowsky-piastro_gbia7039886a/Swan%20Lake%20-%20Tschaikowsky%20-%20Piastro.flac"

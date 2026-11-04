@@ -1,12 +1,14 @@
 # Pico Swan Lake: The Conductor's Program
 
-**An Agile Lens production.** Stand on a dock at the edge of a lake and conduct. A 24 minute program of nine movements runs
+**An Agile Lens production.** Stand on a dock at the edge of a lake and conduct. A 24 minute program, a tuning and eight movements, runs
 from before dawn to a fireworks finale, played by real recordings, and a flock of swans answers your hand. Each movement has its own hour,
 its own weather and choreography, and its own thing your baton does.
 
 Built for PICO headsets with Godot 4.7.2 and OpenXR. Works with controllers, bare hands, or a mouse and keyboard on the desktop.
 This is an uplift of [Swan Lake XR](https://github.com/AgileLens/swan-lake-xr), which it keeps the conducting, ripples, gathering,
 Cygnus stars and fireworks from. See [RECEIPT.md](RECEIPT.md) for what has and hasn't been verified, and read it before quoting anything here.
+
+![Dawn on the lake, from the dock: the conductor's hand raised and the flock waking](stills/01_dawn.png)
 
 ## The Program
 

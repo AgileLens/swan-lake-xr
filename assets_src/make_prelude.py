@@ -2,12 +2,12 @@
 """The Prelude: a tuning A, then the Swan Lake theme on a synthesized harp and oboe.
 
 Tchaikovsky's score is public domain and this performance is generated here, so nothing in it comes
-from any recording. Output: project/assets/music/prelude.wav, picked up by the mp3 step below.
+from any recording. Output: assets_src/downloads/prelude.wav, which tools/make_program_audio.py cuts to MP3.
 Written to be in tune against B minor, the key of the Scene later in the program. No one has heard
 this on a headset, or at all: it was checked by pitch analysis only."""
 import numpy as np, pathlib, subprocess, sys, wave
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT = ROOT / "project" / "assets" / "music"
+OUT = ROOT / "assets_src" / "downloads"
 SR = 44100
 NOTE = {n: i for i, n in enumerate("C C# D D# E F F# G G# A A# B".split())}
 def hz(name):
