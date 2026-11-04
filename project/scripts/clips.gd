@@ -30,7 +30,7 @@ func setup(m) -> void:
 			main.music.act4_active = true
 			main.megaflock.chorus = 1.0
 			main.fireworks.start_show()
-			rig.pitch = 0.10
+			rig.pitch = 0.22
 		"storm":
 			_enter("storm", 20.0, "storm", "rain")
 	main.flock.snap = true

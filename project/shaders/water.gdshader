@@ -82,7 +82,7 @@ void fragment() {
 	SPECULAR = 0.55;
 	vec3 refl = reflect(vdir, n);
 	float md = max(dot(refl, normalize(moon_dir)), 0.0);
-	float streak = pow(md, 420.0) * 1.7 + pow(md, 40.0) * 0.08;
+	float streak = pow(md, 300.0) * 1.15 + pow(md, 34.0) * 0.08;
 	vec3 emis = glint_color * streak * (glint_strength + music_energy * 0.9 + glint_pulse);
 	// star glitter: tiny transient sparks on calm facets, densest away from the moon streak
 	float calm = 1.0 - clamp(abs(nx) * 14.0 + abs(nz) * 14.0, 0.0, 1.0);
