@@ -99,3 +99,7 @@ This build was developed, tested and exported on 4.7.2 from the start, so there'
 1. **A worn pass with counters**: fps per movement, governor behavior, glove and sleeve alignment on a controller, whether hands engage. Everything else depends on this. If draw calls hurt, merge wings and tail into the body and drop the stereo reflection first.
 2. **A listening pass and a better Swan Lake**: a person checks every edit point and the two old discs, and someone sources a clean, licensable Scène.
 3. **More dance, less formation**: real ensemble passages per movement, a proper pas de deux for The Swan and a true curtain choreography, plus more variety in the far flock.
+
+## Visual change for the pitch hero, 2026-11-04
+
+Sunrise mood fog density lowered from 0.0060 to 0.0034, in `project/scripts/mood.gd`, so the far ridges and forest keep their contrast at dawn instead of washing into one peach band (reviewers named the haze in every dawn frame). `tools/test.sh` rc 0 after the change. Desktop only, not seen on a headset. Rebuilt APK sha256 is listed in `hero/manifest.json`.

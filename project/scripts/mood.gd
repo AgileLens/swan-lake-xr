@@ -99,7 +99,7 @@ var presets := {
 		"aurora_a": Color(0.50, 0.80, 0.90), "aurora_b": Color(0.95, 0.75, 0.60),
 		"sky_top": Color(0.150, 0.280, 0.520), "sky_horizon": Color(1.00, 0.640, 0.420),
 		"stars": 0.0, "milkyway": 0.0, "moon_color": Color(1.00, 0.76, 0.50), "moon_energy": 1.05,
-		"moon_dir": Vector3(-0.58, 0.20, -0.79), "fog_color": Color(0.780, 0.580, 0.470), "fog_density": 0.0060,
+		"moon_dir": Vector3(-0.58, 0.20, -0.79), "fog_color": Color(0.780, 0.580, 0.470), "fog_density": 0.0034,
 		"water_base": Color(0.030, 0.050, 0.080), "water_horizon": Color(0.320, 0.240, 0.200),
 		"glint": Color(1.00, 0.80, 0.55), "firefly": Color(1.00, 0.95, 0.80), "accent": Color(1.00, 0.85, 0.60),
 		"beam": Color(1.00, 0.85, 0.65), "fireworks": [Color(1.0, 0.85, 0.6), Color(1.0, 0.6, 0.6), Color(0.95, 0.9, 0.75)],
