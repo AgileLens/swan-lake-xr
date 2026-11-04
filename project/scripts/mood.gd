@@ -34,6 +34,7 @@ var presets := {
 		"accent": Color(0.80, 0.95, 1.00),
 		"beam": Color(0.55, 0.75, 1.00),
 		"fireworks": [Color(0.65, 0.85, 1.0), Color(0.95, 0.97, 1.0), Color(0.75, 0.6, 1.0)],
+		"ambient": 1.05, "reflect": 0.42, "fill": 0.16,
 	},
 	"dusk": {
 		"cloud_cover": 0.58,
@@ -57,6 +58,7 @@ var presets := {
 		"accent": Color(1.00, 0.72, 0.45),
 		"beam": Color(1.00, 0.70, 0.45),
 		"fireworks": [Color(1.0, 0.78, 0.35), Color(1.0, 0.5, 0.45), Color(0.95, 0.5, 0.9)],
+		"ambient": 0.9, "reflect": 0.42, "fill": 0.10,
 	},
 	"dawn": {
 		"cloud_cover": 0.50,
@@ -90,7 +92,7 @@ var presets := {
 		"water_base": Color(0.012, 0.022, 0.050), "water_horizon": Color(0.110, 0.120, 0.210),
 		"glint": Color(0.70, 0.78, 1.00), "firefly": Color(0.55, 0.85, 1.00), "accent": Color(0.75, 0.82, 1.00),
 		"beam": Color(0.55, 0.75, 1.00), "fireworks": [Color(0.65, 0.85, 1.0), Color(0.95, 0.97, 1.0), Color(0.75, 0.6, 1.0)],
-		"ambient": 0.75, "sun": 0.0, "reflect": 0.45,
+		"ambient": 0.75, "sun": 0.0, "reflect": 0.45, "fill": 0.14,
 	},
 	"sunrise": {
 		"cloud_cover": 0.42, "cloud_tint": Color(1.00, 0.70, 0.56), "aurora": 0.0,
@@ -167,7 +169,7 @@ var presets := {
 		"water_base": Color(0.008, 0.020, 0.042), "water_horizon": Color(0.040, 0.070, 0.130),
 		"glint": Color(0.85, 0.92, 1.00), "firefly": Color(0.55, 0.85, 1.00), "accent": Color(0.85, 0.95, 1.00),
 		"beam": Color(0.55, 0.75, 1.00), "fireworks": [Color(1.0, 0.82, 0.4), Color(0.95, 0.97, 1.0), Color(0.95, 0.4, 0.5), Color(0.5, 0.75, 1.0)],
-		"ambient": 1.0, "sun": 0.0, "reflect": 0.45,
+		"ambient": 1.0, "sun": 0.0, "reflect": 0.45, "fill": 0.16,
 	},
 }
 
@@ -201,6 +203,8 @@ func apply(name: String, instant: bool, seconds := 2.2) -> void:
 	_sh(SwanLook.body_mat, "exposure", swan_gain, dur)
 	_sh(SwanLook.feather_mat, "exposure", swan_gain, dur)
 	_sh(main.water_mat, "star_sparkle", float(p.stars), dur)
+	if main.env_mat:
+		_sh(main.env_mat, "night_fill", float(p.get("fill", 0.0)), dur)
 	_sh(main.sky_mat, "top_color", p.sky_top, dur)
 	_sh(main.sky_mat, "horizon_color", p.sky_horizon, dur)
 	_sh(main.sky_mat, "star_intensity", p.stars, dur)

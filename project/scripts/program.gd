@@ -228,7 +228,8 @@ func _try_strike(t: float, aim: Vector3, strength: float, manual: bool) -> void:
 	_last_strike_t = t
 	var p: Vector3 = aim if aim != Vector3.INF else Vector3(randf_range(-14, 14), 0, randf_range(-34, -18))
 	main.storm.strike(p, true)
-	score.add_verb(0.13 if near_accent else 0.05)
+	if near_accent:
+		score.add_verb(0.13)
 
 # ---------------------------------------------------------------- per-frame
 

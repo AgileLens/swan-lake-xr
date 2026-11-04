@@ -3,6 +3,7 @@ render_mode cull_disabled;
 // All scenery shares this. rgb = albedo, a = sway weight, UV.x = emission strength (lanterns).
 uniform float u_time_scale = 1.0;
 uniform float wind = 1.0;
+uniform float night_fill = 0.0;  // keeps the shore a shape in the dark, not a black cutout
 varying float v_emit;
 
 void vertex() {
@@ -18,5 +19,5 @@ void fragment() {
 	ALBEDO = COLOR.rgb;
 	ROUGHNESS = 0.92;
 	SPECULAR = 0.2;
-	EMISSION = COLOR.rgb * v_emit * 6.0;
+	EMISSION = COLOR.rgb * (v_emit * 6.0 + night_fill);
 }

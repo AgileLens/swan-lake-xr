@@ -23,8 +23,8 @@ func _perf_probe() -> void:
 	rig.position = Vector3(0, 1.72, 0.6)
 	await get_tree().create_timer(1.0).timeout
 	var shots := [["dawn", 80.0, "sunrise", "mist", 1], ["regatta", 30.0, "morning", "breeze", 1], ["storm", 60.0, "storm", "rain", 1],
-		["clearing", 60.0, "clearing", "clear", 1], ["cygne", 60.0, "golden", "clear", 1], ["moonlight", 60.0, "night", "clear", 2],
-		["scene", 60.0, "night", "snow", 2], ["finale", 190.0, "gala", "clear", 3]]
+		["clearing", 60.0, "clearing", "clear", 1], ["cygne", 60.0, "golden", "clear", 1], ["moonlight", 60.0, "night", "clear", 1],
+		["scene", 60.0, "night", "snow", 1], ["finale", 190.0, "gala", "clear", 2]]
 	for p in shots:
 		_stage(p[0], p[1], p[2], p[3])
 		main.megaflock.request_level(p[4])
@@ -138,7 +138,7 @@ func _run() -> void:
 		for i in 4:
 			main.flock.wake_next()
 		await _settle(5.0)
-		_hand(Vector3(0.10, 0.22, -1.02))
+		_hand(Vector3(0.22, 0.02, -1.00))
 		_aim(eye, Vector3(-1.0, 1.1, -8.0), 72.0)
 		await _settle(0.8)
 		await _save("01_dawn")
@@ -146,7 +146,7 @@ func _run() -> void:
 		_stage("regatta", 40.0, "morning", "breeze")
 		main.flock.lead_point = Vector3(-3.5, 0, -5.5)
 		await _settle(5.0)
-		_hand(Vector3(0.02, -0.08, -1.04))
+		_hand(Vector3(0.20, -0.20, -1.02))
 		_aim(eye + Vector3(0.1, -0.05, 0), Vector3(-1.5, 0.75, -7.0), 72.0)
 		await _settle(0.5)
 		await _save("02_regatta")
@@ -154,7 +154,7 @@ func _run() -> void:
 		_stage("storm", 60.0, "storm", "rain")
 		await _settle(5.0)
 		main.storm.strike(Vector3(5.0, 0, -22.0), true)
-		_hand(Vector3(0.04, 0.14, -1.04))
+		_hand(Vector3(0.22, -0.02, -1.02))
 		_aim(eye, Vector3(1.0, 1.3, -8.0), 74.0)
 		await _settle(0.05)
 		await _save("03_storm")
@@ -165,7 +165,7 @@ func _run() -> void:
 		main.rainbow.set_bins(b, 1.0)
 		main.rainbow.alpha = 1.0
 		await _settle(5.0)
-		_hand(Vector3(0.00, 0.24, -1.00))
+		_hand(Vector3(0.24, -0.02, -1.00))
 		_aim(eye, Vector3(0.3, 2.3, -8.0), 78.0)
 		main.rainbow.alpha = 1.0
 		await _settle(0.5)
@@ -174,7 +174,7 @@ func _run() -> void:
 		_stage("cygne", 45.0, "golden", "clear")
 		main.flock.lead_point = Vector3(-0.2, 0, -3.3)
 		await _settle(5.0)
-		_hand(Vector3(0.10, -0.20, -1.03))
+		_hand(Vector3(0.24, -0.26, -1.00))
 		_aim(eye + Vector3(0, -0.1, 0), Vector3(-0.05, 0.42, -3.3), 52.0)
 		await _settle(0.5)
 		await _save("05_golden_swan")
@@ -183,7 +183,7 @@ func _run() -> void:
 		main.flock.set_formation("pair")
 		main.flock.lead_point = Vector3(0.0, 0, -3.9)
 		await _settle(6.0)
-		_hand(Vector3(0.20, -0.30, -1.00))
+		_hand(Vector3(0.30, -0.30, -0.96))
 		_aim(eye + Vector3(0, -0.25, 0), Vector3(0, 0.46, -4.0), 44.0)
 		await _settle(0.5)
 		await _save("06_heart")
@@ -193,7 +193,7 @@ func _run() -> void:
 		for i in 4:
 			main.constellation.light_next()
 		main.conductor._speed_avg = 2.0
-		_hand(Vector3(0.02, 0.34, -0.98))
+		_hand(Vector3(0.24, 0.06, -1.00))
 		_aim(eye, Vector3(-0.4, 3.0, -8.0), 86.0)
 		await _settle(0.5)
 		await _save("07_moonrise")
@@ -203,23 +203,22 @@ func _run() -> void:
 		main.set_gather(true)
 		main.beam_alpha = 0.16
 		await _settle(7.0)
-		_hand(Vector3(0.03, -0.10, -1.05))
+		_hand(Vector3(0.24, -0.20, -1.00))
 		_aim(eye, Vector3(0, 1.0, -6.0), 68.0)
 		await _settle(0.5)
 		await _save("08_scene")
 	if _ok("09_finale"):
 		_stage("finale", 190.0, "gala", "clear")
-		main.megaflock.set_level(3)
+		main.megaflock.set_level(2)
 		main.music.act4_active = true
 		main.megaflock.chorus = 1.0
 		await _settle(4.0)
 		main.fireworks.set_palette([Color(1.0, 0.82, 0.4), Color(0.95, 0.97, 1.0), Color(0.95, 0.4, 0.5), Color(0.5, 0.75, 1.0)])
 		for x in [-13.0, -6.0, 0.5, 7.0, 13.0]:
 			main.fireworks.launch(Vector3(x, 0, randf_range(-30, -22)))
-		_hand(Vector3(0.02, 0.32, -0.98))
-		await _settle(1.75)
+		_hand(Vector3(0.24, 0.04, -1.00))
 		_aim(eye, Vector3(0, 3.1, -8.0), 80.0)
-		await _settle(0.05)
+		await _settle(1.95)
 		await _save("09_finale")
 	if _ok("10_portrait"):
 		_stage("cygne", 45.0, "golden", "clear")

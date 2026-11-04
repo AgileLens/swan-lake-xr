@@ -5,7 +5,7 @@ uniform vec3 base_color : source_color = vec3(0.010, 0.025, 0.050);
 uniform vec3 horizon_color : source_color = vec3(0.05, 0.09, 0.16);
 uniform vec3 glint_color : source_color = vec3(0.85, 0.92, 1.0);
 uniform vec3 moon_dir = vec3(-0.22, 0.28, -0.93);
-uniform float glint_strength = 1.1;
+uniform float glint_strength = 0.75;
 uniform float glint_pulse = 0.0;        // fireworks flash
 uniform float u_time = 0.0;
 uniform float music_energy = 0.0;
@@ -82,7 +82,7 @@ void fragment() {
 	SPECULAR = 0.55;
 	vec3 refl = reflect(vdir, n);
 	float md = max(dot(refl, normalize(moon_dir)), 0.0);
-	float streak = pow(md, 600.0) * 2.4 + pow(md, 48.0) * 0.10;
+	float streak = pow(md, 420.0) * 1.7 + pow(md, 40.0) * 0.08;
 	vec3 emis = glint_color * streak * (glint_strength + music_energy * 0.9 + glint_pulse);
 	// star glitter: tiny transient sparks on calm facets, densest away from the moon streak
 	float calm = 1.0 - clamp(abs(nx) * 14.0 + abs(nz) * 14.0, 0.0, 1.0);

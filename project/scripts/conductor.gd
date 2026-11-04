@@ -168,21 +168,22 @@ func _add_sleeve(root: Node3D, wrist: Vector3) -> void:
 	var coat := MeshInstance3D.new()
 	var sm := CylinderMesh.new()
 	sm.top_radius = 0.040
-	sm.bottom_radius = 0.048
-	sm.height = 0.34
+	sm.bottom_radius = 0.046
+	sm.height = 0.22
 	sm.radial_segments = 14
 	sm.rings = 1
 	sm.cap_bottom = false
+	sm.cap_top = false
 	coat.mesh = sm
-	var black := StandardMaterial3D.new()
-	black.albedo_color = Color(0.052, 0.052, 0.062)
-	black.roughness = 0.55
-	black.rim_enabled = true
-	black.rim = 0.5
+	# The sleeve dissolves toward the elbow: you only need the first hand's width of it to read
+	# "tailcoat". A solid arm reaching toward your face filled a quarter of the view.
+	var black := ShaderMaterial.new()
+	black.shader = load("res://shaders/sleeve.gdshader")
 	coat.material_override = black
+	coat.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	coat.rotation_degrees = Vector3(90, 0, 0)
 	coat.scale = Vector3(1, 1, 0.82)
-	coat.position = wrist + Vector3(0, 0, 0.195)
+	coat.position = wrist + Vector3(0, 0, 0.135)
 	root.add_child(coat)
 
 func _pose_fingers(skel: Skeleton3D, hand: String, pose: Dictionary, grip: bool) -> void:

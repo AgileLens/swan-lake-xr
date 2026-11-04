@@ -26,7 +26,7 @@ func setup(m) -> void:
 			main.flock.lead_point = Vector3(-6, 0, -7)
 		"finale":
 			_enter("finale", 186.0, "gala", "clear")
-			main.megaflock.request_level(3)
+			main.megaflock.request_level(2)
 			main.music.act4_active = true
 			main.megaflock.chorus = 1.0
 			main.fireworks.start_show()

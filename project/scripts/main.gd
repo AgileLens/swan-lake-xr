@@ -182,7 +182,8 @@ func _launch_mode() -> void:
 				add_child(tool)
 				tool.setup(self)
 				return
-	# The real thing: the title card plays, then the program starts on its own.
+	# The real thing: the title card plays over a sleeping flock, then the program starts.
+	flock.put_to_sleep()
 	get_tree().create_timer(9.0).timeout.connect(func():
 		if program.state == ConductorsProgram.State.IDLE:
 			program.start())
@@ -209,6 +210,7 @@ func _build_scenery() -> void:
 	var inst: Node3D = scene.instantiate()
 	env_mat = ShaderMaterial.new()
 	env_mat.shader = load("res://shaders/env.gdshader")
+	env_mat.set_shader_parameter("night_fill", 0.0)  # tweens read this back, so it can't be unset
 	_dress_env(inst)
 	add_child(inst)
 

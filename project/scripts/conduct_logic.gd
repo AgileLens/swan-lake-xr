@@ -62,6 +62,7 @@ class MovementScore:
 	var duration := 1.0
 	var active_time := 0.0
 	var beats_on := 0.0
+	var streak := 0
 	var expressive_time := 0.0
 	var verb := 0.0        # 0..1 progress on this movement's special gesture
 	var beat_goal := 40.0
@@ -74,8 +75,14 @@ class MovementScore:
 		active_time += dt
 
 	func add_beat(on_beat: bool) -> void:
+		# Beat-keeping is a run of them. One lucky hit in a flurry of waving is chance, while
+		# three in a row is someone following the music. A miss ends the run and takes nothing.
 		if on_beat:
-			beats_on += 1.0
+			streak += 1
+			if streak >= 3:
+				beats_on += 1.0
+		else:
+			streak = 0
 
 	func add_expressive(dt: float) -> void:
 		expressive_time += dt
@@ -87,7 +94,7 @@ class MovementScore:
 		var engage := clampf(active_time / (duration * 0.45), 0.0, 1.0)
 		var timing := clampf(beats_on / beat_goal, 0.0, 1.0)
 		var express := clampf(expressive_time / (duration * 0.3), 0.0, 1.0)
-		return clampf(GRADE_FLOOR + 0.30 * verb + 0.20 * timing + 0.14 * express + 0.14 * engage, GRADE_FLOOR, 1.0)
+		return clampf(GRADE_FLOOR + 0.24 * verb + 0.28 * timing + 0.12 * express + 0.14 * engage, GRADE_FLOOR, 1.0)
 
 # Does this gesture size suit this moment of the music? Quiet music wants a small hand.
 static func expressive_match(gesture_m: float, env: float) -> bool:
@@ -106,9 +113,9 @@ const TIERS := [
 ]
 
 static func tier_for(grace: float) -> int:
-	if grace >= 0.74:
+	if grace >= 0.80:
 		return 3
-	if grace >= 0.56:
+	if grace >= 0.58:
 		return 2
 	if grace >= 0.38:
 		return 1

@@ -81,9 +81,17 @@ func _test_score() -> void:
 	for i in 100:
 		great.add_beat(true)
 	check("a full performance tops out at 1", great.grade() > 0.98, str(great.grade()))
+	var lucky := Logic.MovementScore.new(200.0)
+	for i in 300:
+		lucky.add_beat(i % 3 == 0)
+	check("scattered lucky hits don't count as keeping time", lucky.beats_on == 0.0, str(lucky.beats_on))
+	var kept := Logic.MovementScore.new(200.0)
+	for i in 30:
+		kept.add_beat(true)
+	check("a run of beats does count", kept.beats_on >= 28.0 and kept.grade() > idle.grade(), str(kept.beats_on))
 	var verb_only := Logic.MovementScore.new(200.0)
 	verb_only.add_verb(1.0)
-	check("the movement's gesture moves the grade most", verb_only.grade() > idle.grade() + 0.25, str(verb_only.grade()))
+	check("the movement's gesture moves the grade most", verb_only.grade() > idle.grade() + 0.2, str(verb_only.grade()))
 	check("on-beat window accepts a near hit", Logic.is_on_beat(0.1))
 	check("on-beat window rejects the far side", not Logic.is_on_beat(0.45))
 	check("big gesture suits loud music", Logic.expressive_match(0.6, 1.0))

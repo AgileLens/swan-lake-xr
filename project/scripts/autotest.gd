@@ -155,6 +155,7 @@ func _finish() -> void:
 		expect("you lit stars yourself", int(_result.get("stars", 0)) >= 5, str(_result.get("stars", 0)))
 		_compare_with("off", true)
 		_compare_with("wild", true)
+		expect("a real performance earns the ovation", int(_result.get("tier", 0)) == 3, str(_result.get("tier", 0)))
 		expect("a full performance earned more than warm applause", int(_result.get("tier", 0)) >= 2, str(_result))
 	if mode == "off":
 		expect("nobody conducting still gets the bow", int(_result.get("tier", -1)) >= 0)
@@ -162,6 +163,7 @@ func _finish() -> void:
 		expect("the storm still struck on its own", main.storm.strikes >= 3, str(main.storm.strikes))
 	if mode == "wild":
 		_compare_with("off", false)
+		expect("flailing doesn't earn the top ovation", int(_result.get("tier", 0)) < 3, str(_result.get("tier", 0)))
 		expect("no wild gesture fell below the floor", _min_grade() >= ConductLogic.GRADE_FLOOR - 0.0001, str(_result.get("grades", [])))
 	print("AUTOTEST_RESULT mode=%s checks=%d failures=%d grace=%.3f tier=%d" % [mode, checks, failures.size(), grace, int(_result.get("tier", -1))])
 	print("AUTOTEST " + ("PASS" if failures.is_empty() else "FAIL"))
