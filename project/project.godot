@@ -34,6 +34,9 @@ openxr/render_target_size_multiplier=1.35
 openxr/enabled=true
 openxr/foveation_level=2
 openxr/foveation_dynamic=true
+; The emulator never shows subsampled eye images: the window stays black, or room-only over passthrough.
+; Foveation itself stays on. Only the subsampled image flag goes. Headset effect untested.
+openxr/foveation_with_subsampled_images=false
 ; Fort (sibling project, same vendors plugin) traced their face/eye tracking
 ; dead end to two separate causes: an unrelated extension left off by default,
 ; AND permissions that were declared in the manifest but never actually
