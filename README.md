@@ -15,6 +15,14 @@ mesh-hand toggle. PICO real-hand camera compositing is explicitly labeled unavai
 either visual setting never disables tracked hand/controller input. Controller actions use short
 event haptics, not continuous vibration.
 
+### Geometry integrity
+
+The procedural geometry audit fixed the rainbow's reversed dock-facing winding and the environment
+generator's inverted broadleaf crown caps. Solid scenery now uses back-face culling; the old global
+two-sided environment material is gone, with two-sided rendering scoped only to deliberate
+zero-thickness reed cards. `python3 tools/geometry_check.py` checks those windings, mirrored feather
+face reversal, explicit reed backs and negative-determinant runtime scales without launching Godot.
+
 ![Dawn on the lake, from the dock: the conductor's hand raised and the flock waking](stills/01_dawn.png)
 
 ## The Program

@@ -205,8 +205,10 @@ def round_tree(b, x, y, z, h, tone_k):
         for j in range(segs):
             a, bb = base + ri * segs + j, base + ri * segs + (j + 1) % segs
             b.f.append((a, bb, bb + segs, a + segs))
-    b.f.append(tuple(base + j for j in range(segs)))
-    b.f.append(tuple(base + (len(rings) - 1) * segs + j for j in reversed(range(segs))))
+    # Bottom faces down, top faces up. These were reversed and only visible because the shared
+    # environment shader disabled culling for the entire scene.
+    b.f.append(tuple(base + j for j in reversed(range(segs))))
+    b.f.append(tuple(base + (len(rings) - 1) * segs + j for j in range(segs)))
 
 def build_trees():
     b = Batch("Trees")
@@ -246,7 +248,11 @@ def reed(b, x, y, h, lean, tone):
             b.uv.append((0.0, 0.0))
     for k in range(3):
         a = base + k * 2
-        b.f.append((a, a + 1, a + 3, a + 2))
+        face = (a, a + 1, a + 3, a + 2)
+        # A reed is a zero-thickness blade, not a closed solid. Author both sides explicitly so
+        # its two-sided intent is geometry-local instead of a global culling workaround.
+        b.f.append(face)
+        b.f.append(tuple(reversed(face)))
 
 def cattail(b, x, y, h, tone):
     reed(b, x, y, h, R.uniform(0, 6.28), tone)

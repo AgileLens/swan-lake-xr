@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode cull_disabled;
+render_mode cull_back;
 // All scenery shares this. rgb = albedo, a = sway weight, UV.x = emission strength (lanterns).
 uniform float u_time_scale = 1.0;
 uniform float wind = 1.0;

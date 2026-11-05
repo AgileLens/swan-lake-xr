@@ -29,7 +29,10 @@ func setup(m) -> void:
 				Vector3(-cos(a1) * r1, sin(a1) * r1, 0), Vector3(-cos(a0) * r1, sin(a0) * r1, 0)]
 			var v := [float(k) * 0.5, float(k) * 0.5, float(k + 1) * 0.5, float(k + 1) * 0.5]
 			var uu := [u0, u1, u1, u0]
-			for j in [0, 1, 2, 0, 2, 3]:
+			# Godot front faces are clockwise. Seen from the dock (+Z), this ordering points
+			# toward the audience; the old counter-clockwise order was back-facing and only
+			# survived because the shader disabled culling globally.
+			for j in [0, 2, 1, 0, 3, 2]:
 				st.set_uv(Vector2(uu[j], v[j]))
 				st.add_vertex(p[j])
 	mi.mesh = st.commit()

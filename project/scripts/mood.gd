@@ -205,6 +205,8 @@ func apply(name: String, instant: bool, seconds := 2.2) -> void:
 	_sh(main.water_mat, "star_sparkle", float(p.stars), dur)
 	if main.env_mat:
 		_sh(main.env_mat, "night_fill", float(p.get("fill", 0.0)), dur)
+	if main.env_foliage_mat:
+		_sh(main.env_foliage_mat, "night_fill", float(p.get("fill", 0.0)), dur)
 	_sh(main.sky_mat, "top_color", p.sky_top, dur)
 	_sh(main.sky_mat, "horizon_color", p.sky_horizon, dur)
 	_sh(main.sky_mat, "star_intensity", p.stars, dur)

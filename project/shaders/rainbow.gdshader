@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, cull_disabled, fog_disabled;
+render_mode unshaded, blend_add, depth_draw_never, cull_back, fog_disabled;
 // Spectral bands across the bow, faded at both ends and painted in by bearing bins.
 uniform float alpha = 0.0;
 uniform float bins[14];

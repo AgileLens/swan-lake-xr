@@ -108,3 +108,5 @@ func _process(delta: float) -> void:
 	wind = lerpf(wind, want_wind, clampf(delta * 0.5, 0.0, 1.0))
 	if main.env_mat:
 		main.env_mat.set_shader_parameter("wind", wind)
+	if main.env_foliage_mat:
+		main.env_foliage_mat.set_shader_parameter("wind", wind)

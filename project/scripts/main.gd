@@ -46,6 +46,7 @@ var rainbow: Rainbow
 var storm: StormKit
 var feathers: FeatherFall
 var env_mat: ShaderMaterial
+var env_foliage_mat: ShaderMaterial
 var lead_ring_until := 0.0
 var hand_input  # HandInput — untyped: a new class_name isn't in the global class
                 # cache until an editor pass, so don't depend on it resolving
@@ -248,13 +249,18 @@ func _build_scenery() -> void:
 	env_mat = ShaderMaterial.new()
 	env_mat.shader = load("res://shaders/env.gdshader")
 	env_mat.set_shader_parameter("night_fill", 0.0)  # tweens read this back, so it can't be unset
+	env_foliage_mat = ShaderMaterial.new()
+	env_foliage_mat.shader = load("res://shaders/env_foliage.gdshader")
+	env_foliage_mat.set_shader_parameter("night_fill", 0.0)
 	_dress_env(inst)
 	add_child(inst)
 
 func _dress_env(n: Node) -> void:
 	if n is MeshInstance3D:
 		var mi := n as MeshInstance3D
-		mi.material_override = env_mat
+		# Only the intentionally zero-thickness reed cards are two-sided. The previous single
+		# cull-disabled material covered every terrain/dock/tree face and masked winding defects.
+		mi.material_override = env_foliage_mat if mi.name.to_lower().contains("reed") else env_mat
 		# Only the dock is close enough to cast a shadow anyone would notice.
 		if not mi.name.begins_with("Dock"):
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
