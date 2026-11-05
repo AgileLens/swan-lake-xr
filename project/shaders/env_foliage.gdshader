@@ -1,7 +1,7 @@
 shader_type spatial;
-render_mode cull_disabled;
-// Deliberately two-sided only for zero-thickness reed cards. Terrain, dock, trees, ridges and
-// lilies use env.gdshader with back-face culling so reversed geometry cannot be hidden globally.
+render_mode cull_back;
+// Reed cards carry explicit front and back triangles in env.glb. They remain visibly two-sided
+// without disabling culling, so an accidental reversed face cannot be hidden by the material.
 uniform float u_time_scale = 1.0;
 uniform float wind = 1.0;
 uniform float night_fill = 0.0;

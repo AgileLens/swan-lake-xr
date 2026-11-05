@@ -18,10 +18,11 @@ event haptics, not continuous vibration.
 ### Geometry integrity
 
 The procedural geometry audit fixed the rainbow's reversed dock-facing winding and the environment
-generator's inverted broadleaf crown caps. Solid scenery now uses back-face culling; the old global
-two-sided environment material is gone, with two-sided rendering scoped only to deliberate
-zero-thickness reed cards. `python3 tools/geometry_check.py` checks those windings, mirrored feather
-face reversal, explicit reed backs and negative-determinant runtime scales without launching Godot.
+generator's inverted broadleaf crown caps. The tracked `env.glb` was repaired too: all 39 crowns
+have outward top/bottom caps and all 298 zero-thickness reed blades carry explicit front and back
+triangles. Solid scenery and foliage now use back-face culling; the old global two-sided environment
+material is gone. `python3 tools/geometry_check.py` decodes the shipped GLB and checks those faces,
+mirrored feather reversal and negative-determinant runtime scales without launching Godot.
 
 ![Dawn on the lake, from the dock: the conductor's hand raised and the flock waking](stills/01_dawn.png)
 

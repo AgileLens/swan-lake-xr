@@ -2,6 +2,7 @@
 """Pure source/math winding guard for Swan Lake. No Godot, Blender, GPU or export required."""
 from pathlib import Path
 import math, re
+from fix_env_glb_winding import audit
 
 ROOT = Path(__file__).resolve().parent.parent
 checks = []
@@ -28,7 +29,7 @@ check("lightning strip faces the audience", signed_z((-1, 1), (1, 1), (1, -1)) <
 env = (ROOT / "project/shaders/env.gdshader").read_text()
 foliage = (ROOT / "project/shaders/env_foliage.gdshader").read_text()
 check("solid environment no longer disables culling", "cull_disabled" not in env and "cull_back" in env)
-check("two-sided culling is scoped to foliage", "cull_disabled" in foliage)
+check("foliage uses explicit backs, not disabled culling", "cull_disabled" not in foliage and "cull_back" in foliage)
 
 generator = (ROOT / "assets_src/make_env.py").read_text()
 check("reed blades author both windings", "b.f.append(tuple(reversed(face)))" in generator)
@@ -40,6 +41,11 @@ scripts = "\n".join(p.read_text() for p in sorted((ROOT / "project/scripts").glo
 scale_exprs = re.findall(r"(?:\.scale\s*=|scaled\s*\()\s*Vector3\(([^\n)]*)\)", scripts)
 reflected = [s for s in scale_exprs if re.search(r"(?:^|,)\s*-\s*\d", s)]
 check("runtime scripts have no literal reflected scale", not reflected)
+
+glb = audit((ROOT / "project/assets/env/env.glb").read_bytes())
+check("tracked GLB crown caps and normals point outward", glb["crowns"] == glb["crown_ok"] == glb["crown_normals_ok"] == 39)
+check("tracked GLB has explicit reed backs and normals", glb["blades_double_sided"] == 298 and glb["reed_triangles"] == 4187 and glb["reed_normal_min"] > 0.6)
+print("tracked env.glb sha256=" + glb["sha256"])
 
 failed = sum(not ok for _, ok in checks)
 print(f"GEOMETRY_RESULT passed={len(checks)-failed} failed={failed}")
