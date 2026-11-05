@@ -86,7 +86,7 @@ func set_weather_loop(name: String, vol_db := -14.0) -> void:
 		loop_b.stream = streams[name]
 		if loop_b.stream is AudioStreamWAV:
 			loop_b.stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-			loop_b.stream.loop_end = loop_b.stream.data.size() / 2
+			loop_b.stream.loop_end = maxi(0, int(round(loop_b.stream.get_length() * loop_b.stream.mix_rate)) - 1)
 		loop_b.volume_db = -50.0
 		loop_b.play()
 		create_tween().tween_property(loop_b, "volume_db", vol_db, 2.0)

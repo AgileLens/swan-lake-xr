@@ -83,6 +83,8 @@ python3 /Users/alex/GH/vibe-lab/picoswanlake/tools/make_program_audio.py
 
 ## Things to Try
 
+Audio safety regression: `godot --headless --xr-mode off --path project --script res://tests/audio_loop_bounds.gd` checks the live looping WAV streams against their actual PCM frame counts. Inclusive endpoints stay inside the final frame; headset audio longevity remains a device test.
+
 1. **Just watch.** Put the controllers down for the whole Dawn movement. The flock wakes by itself, and the sun comes up anyway.
 2. **In Dawn, hold your baton above your eyes.** Swans wake sooner, and the sun lifts with your hand.
 3. **In The Storm, strike straight down on a crash.** The bolt lands where you're pointing.

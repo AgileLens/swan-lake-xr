@@ -19,7 +19,7 @@ func setup(m) -> void:
 	add_child(theme)
 	if theme.stream is AudioStreamWAV:
 		(theme.stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
-		(theme.stream as AudioStreamWAV).loop_end = (theme.stream as AudioStreamWAV).data.size() / 2
+		(theme.stream as AudioStreamWAV).loop_end = maxi(0, int(round(theme.stream.get_length() * (theme.stream as AudioStreamWAV).mix_rate)) - 1)
 	theme.play()
 
 func _mat(color: Color, emission := 0.0) -> StandardMaterial3D:
