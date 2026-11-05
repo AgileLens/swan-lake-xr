@@ -29,6 +29,16 @@ func setup(m) -> void:
 			"cycle": func(): main.conductor.set_sparkle_level((main.conductor.sparkle_level + 1) % 3)},
 		{"name": "Baton", "get": func(): return main.conductor.pose_label(),
 			"cycle": func(): main.conductor.cycle_pose()},
+		{"name": "Mesh hands", "get": func(): return "on" if main.mesh_hands_visible else "off",
+			"cycle": func(): main.mesh_hands_visible = not main.mesh_hands_visible},
+		{"name": "Real hands", "get": func(): return "unavailable",
+			"cycle": func(): main.real_hands_visible = false},
+		{"name": "Visual style", "get": func(): return SwanPresentation.style_name(main.visual_style_index),
+			"cycle": func(): main.cycle_visual_style()},
+		{"name": "Music", "get": func(): return main.music.volume_label(),
+			"cycle": func(): main.music.cycle_volume()},
+		{"name": "Mute", "get": func(): return "yes" if main.music.muted else "no",
+			"cycle": func(): main.music.toggle_mute()},
 		{"name": "SFX time", "get": func(): return main.music.timing_mode_name(),
 			"cycle": func(): main.music.cycle_timing()},
 		{"name": "FPS HUD", "get": func(): return "on" if main.perf.hud_on else "off",
@@ -88,8 +98,8 @@ func _slot(i: int) -> Vector3:
 	# Arc the orbs around the head at a fixed radius — a flat row this wide
 	# (9 settings) pushes the end orbs off to the side and out of easy aim.
 	const RADIUS := 1.25
-	const STEP_DEG := 12.5
-	var a := deg_to_rad((float(i) - float(defs.size() - 1) * 0.5) * STEP_DEG)
+	var step_deg := minf(12.5, 126.0 / maxf(float(defs.size() - 1), 1.0))
+	var a := deg_to_rad((float(i) - float(defs.size() - 1) * 0.5) * step_deg)
 	return Vector3(sin(a) * RADIUS, 0, -cos(a) * RADIUS)
 
 func _refresh() -> void:

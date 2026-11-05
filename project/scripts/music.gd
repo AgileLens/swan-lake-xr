@@ -34,6 +34,8 @@ var _next_grid := -1.0
 var _loop := false
 var _ended := false
 var _cache := {}
+var volume_step := 3
+var muted := false
 
 func _ready() -> void:
 	var idx := AudioServer.bus_count
@@ -47,6 +49,7 @@ func _ready() -> void:
 		p.volume_db = -60.0
 		add_child(p)
 	_active = _player_a
+	_apply_volume()
 
 static func load_clip_data(id: String) -> Dictionary:
 	var f := FileAccess.open("res://assets/music/%s.json" % id, FileAccess.READ)
@@ -77,6 +80,7 @@ func play_clip(id: String, fade := 1.2, from := 0.0, loop := false) -> void:
 	_active.stream = stream
 	_active.volume_db = -40.0 if fade > 0.0 else -2.0
 	_active.play(from)
+	_apply_volume()
 	if fade > 0.0:
 		var tw := create_tween()
 		tw.tween_property(_active, "volume_db", -2.0, fade)
@@ -84,6 +88,22 @@ func play_clip(id: String, fade := 1.2, from := 0.0, loop := false) -> void:
 		var tw2 := create_tween()
 		tw2.tween_property(old, "volume_db", -50.0, maxf(fade, 0.2))
 		tw2.tween_callback(old.stop)
+
+func _apply_volume() -> void:
+	var db: float = -80.0 if muted else float([-24.0, -16.0, -10.0, -5.0, 0.0][volume_step])
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), db)
+
+func cycle_volume() -> void:
+	volume_step = SwanPresentation.next_volume(volume_step)
+	muted = false
+	_apply_volume()
+
+func toggle_mute() -> void:
+	muted = not muted
+	_apply_volume()
+
+func volume_label() -> String:
+	return SwanPresentation.volume_label(volume_step, muted)
 
 func stop_music(fade := 1.5) -> void:
 	clip_id = ""

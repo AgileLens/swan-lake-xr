@@ -8,6 +8,13 @@ Built for PICO headsets with Godot 4.7.2 and OpenXR. Works with controllers, bar
 This is an uplift of [Swan Lake XR](https://github.com/AgileLens/swan-lake-xr), which it keeps the conducting, ripples, gathering,
 Cygnus stars and fireworks from. See [RECEIPT.md](RECEIPT.md) for what has and hasn't been verified, and read it before quoting anything here.
 
+The launch now opens on a rounded program card with **Start**, **Instructions**, and a persisted
+**Continue** movement checkpoint, accompanied by an original code-generated lake nocturne. The
+settings arc includes five Mobile-renderer-safe visual styles, music volume/mute, and an independent
+mesh-hand toggle. PICO real-hand camera compositing is explicitly labeled unavailable; changing
+either visual setting never disables tracked hand/controller input. Controller actions use short
+event haptics, not continuous vibration.
+
 ![Dawn on the lake, from the dock: the conductor's hand raised and the flock waking](stills/01_dawn.png)
 
 ## The Program

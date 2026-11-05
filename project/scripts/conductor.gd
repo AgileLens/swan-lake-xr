@@ -386,7 +386,7 @@ func _track_hands() -> void:
 		# controller — the mitten IS the baton grip, so it stays for controllers.
 		var skin: Node3D = skin_mesh.get(hand)
 		if skin:
-			skin.visible = live and bare
+			skin.visible = live and bare and main.mesh_hands_visible
 		var m: Node3D = mitten.get(hand)
 		if m:
 			m.visible = live and not bare

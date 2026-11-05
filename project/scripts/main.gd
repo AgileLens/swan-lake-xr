@@ -36,6 +36,7 @@ var constellation: CygnusPuzzle
 var nest: SwanNest
 var title: TitleCards
 var menu: OrbMenu
+var launch_menu: SwanLaunchMenu
 var megaflock: MegaFlock
 var reflections: ReflectionRig
 var perf: PerfGovernor
@@ -56,6 +57,10 @@ var finale_fired_this_gather := false
 var attract_until := 0.0
 var attract_point := Vector3.ZERO
 var beam_alpha := 0.0
+var mesh_hands_visible := true
+var real_hands_visible := false
+var visual_style_index := 0
+const SAVE_PATH := "user://swan_program.cfg"
 
 func _ready() -> void:
 	_build_environment()
@@ -182,11 +187,43 @@ func _launch_mode() -> void:
 				add_child(tool)
 				tool.setup(self)
 				return
-	# The real thing: the title card plays over a sleeping flock, then the program starts.
+	# The real thing: title art and an explicit opening menu over a sleeping flock.
 	flock.put_to_sleep()
-	get_tree().create_timer(9.0).timeout.connect(func():
-		if program.state == ConductorsProgram.State.IDLE:
-			program.start())
+	launch_menu = SwanLaunchMenu.new(); add_child(launch_menu); launch_menu.setup(self)
+
+func has_saved_program() -> bool:
+	return FileAccess.file_exists(SAVE_PATH)
+
+func saved_program_index() -> int:
+	var cfg := ConfigFile.new()
+	if cfg.load(SAVE_PATH) != OK: return 0
+	return clampi(int(cfg.get_value("program", "movement", 0)), 0, ProgramData.MOVEMENTS.size() - 1)
+
+func save_program_index(index: int) -> void:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--autotest") or arg.begins_with("--stills") or arg.begins_with("--clip") or arg == "--swanlab":
+			return
+	var cfg := ConfigFile.new(); cfg.set_value("program", "movement", index)
+	cfg.set_value("presentation", "style", visual_style_index)
+	cfg.set_value("presentation", "mesh_hands", mesh_hands_visible)
+	cfg.save(SAVE_PATH)
+
+func cycle_visual_style() -> void:
+	visual_style_index = SwanPresentation.next_style(visual_style_index)
+	apply_visual_style()
+
+func apply_visual_style() -> void:
+	match visual_style_index:
+		0: env.tonemap_mode = Environment.TONE_MAPPER_FILMIC; env.tonemap_white = 2.2; env.adjustment_enabled = false
+		1: env.tonemap_mode = Environment.TONE_MAPPER_LINEAR; env.tonemap_white = 1.6; env.adjustment_enabled = true; env.adjustment_contrast = 1.25; env.adjustment_saturation = 1.18
+		2: env.tonemap_mode = Environment.TONE_MAPPER_FILMIC; env.tonemap_white = 2.5; env.adjustment_enabled = true; env.adjustment_contrast = 0.84; env.adjustment_saturation = 0.80
+		3: env.tonemap_mode = Environment.TONE_MAPPER_LINEAR; env.tonemap_white = 2.0; env.adjustment_enabled = true; env.adjustment_contrast = 1.10; env.adjustment_saturation = 0.92
+		4: env.tonemap_mode = Environment.TONE_MAPPER_LINEAR; env.tonemap_white = 2.0; env.adjustment_enabled = true; env.adjustment_contrast = 1.08; env.adjustment_saturation = 0.08
+	# Environment-only presets: intentionally safe on the Mobile renderer.
+
+func haptic_controller(c: XRController3D, strength := 0.35, duration := 0.04) -> void:
+	if c and xr_active:
+		c.trigger_haptic_pulse("haptic", 0.0, clampf(strength, 0.0, 1.0), duration, 0.0)
 
 func _build_water() -> void:
 	var mesh := PlaneMesh.new()
@@ -309,6 +346,7 @@ func _init_xr_or_preview() -> void:
 func _on_xr_button(button: String, c: XRController3D, pressed: bool) -> void:
 	var is_right := c.tracker == "right_hand"
 	if pressed:
+		haptic_controller(c, 0.28, 0.035)
 		match button:
 			"trigger_click":
 				press_primary(hand_input.pose(hand_of(c)), is_right)
@@ -340,6 +378,8 @@ func _on_xr_button(button: String, c: XRController3D, pressed: bool) -> void:
 # Trigger, right pinch and left-click all arrive here, so every input conducts the same.
 func press_primary(pose: Transform3D, is_right: bool) -> void:
 	title.skip_intro()
+	if launch_menu and launch_menu.open and launch_menu.try_tap(pose):
+		return
 	if stand.try_tap(pose):
 		return
 	if menu.try_tap(pose):

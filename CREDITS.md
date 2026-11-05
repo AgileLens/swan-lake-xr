@@ -8,6 +8,12 @@ Each row states what the claim rests on. Hashes and the license text read at dow
 `tools/make_program_audio.py`. I'm not a lawyer: this is a documented good-faith check, and a rights review is still
 worth doing before a commercial release.
 
+## Original menu theme
+
+`project/assets/music/menu_theme.wav` is an original twelve-second nocturne generated entirely
+from arithmetic by `assets_src/make_menu_theme.py`. It contains no samples and does not quote the
+Swan Lake score or any reference recording.
+
 ## Recordings
 
 | Clip | Movement | Work and composer | Performer | Basis for the recording being public domain | Source |

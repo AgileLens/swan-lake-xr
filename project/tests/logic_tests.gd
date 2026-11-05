@@ -4,6 +4,7 @@ extends SceneTree
 
 const Logic := preload("res://scripts/conduct_logic.gd")
 const Data := preload("res://scripts/program_data.gd")
+const Presentation := preload("res://scripts/presentation.gd")
 
 var failed := 0
 var passed := 0
@@ -24,6 +25,7 @@ func _init() -> void:
 	_test_clips()
 	_test_rights()
 	_test_accents()
+	_test_presentation()
 	print("LOGIC_RESULT passed=%d failed=%d" % [passed, failed])
 	quit(1 if failed > 0 else 0)
 
@@ -213,3 +215,10 @@ func _test_accents() -> void:
 	check("the storm has crashes to answer", acc.size() >= 4, str(acc.size()))
 	var empty: PackedFloat32Array = script._find_accents({"env": [], "env_rate": 10})
 	check("no envelope means no accents", empty.size() == 0)
+
+func _test_presentation() -> void:
+	check("five mobile-safe visual styles are named", Presentation.STYLE_NAMES.size() == 5)
+	check("visual style cycling wraps", Presentation.next_style(4) == 0)
+	check("volume cycling wraps", Presentation.next_volume(4) == 0)
+	check("mute label is explicit", Presentation.volume_label(3, true) == "MUTED")
+	check("real-hand camera compositing is honestly unsupported", not Presentation.real_hand_compositing_supported())

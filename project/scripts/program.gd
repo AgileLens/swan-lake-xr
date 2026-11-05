@@ -74,6 +74,7 @@ func _begin(i: int) -> void:
 	main.stand.show_movement(i)
 	main.title.movement_card(movement)
 	movement_started.emit(i)
+	main.save_program_index(i)
 	print("[program] ", movement["id"], " ", movement["title"], " (", snappedf(float(data.get("duration", 0.0)), 0.1), " s)")
 
 func _stage_movement() -> void:
