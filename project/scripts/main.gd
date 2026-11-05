@@ -63,6 +63,8 @@ var real_hands_visible := false
 var visual_style_index := 0
 const SAVE_PATH := "user://swan_program.cfg"
 
+var recall
+
 func _ready() -> void:
 	_build_environment()
 	_build_water()
@@ -191,6 +193,9 @@ func _launch_mode() -> void:
 	# The real thing: title art and an explicit opening menu over a sleeping flock.
 	flock.put_to_sleep()
 	launch_menu = SwanLaunchMenu.new(); add_child(launch_menu); launch_menu.setup(self)
+	recall = load("res://scripts/recall_adapter.gd").new(); add_child(recall); recall.setup(self)
+	hand_input.process_mode = Node.PROCESS_MODE_ALWAYS
+	hand_input.process_priority = -100
 
 func has_saved_program() -> bool:
 	return FileAccess.file_exists(SAVE_PATH)
@@ -350,6 +355,8 @@ func _init_xr_or_preview() -> void:
 	add_child(reticle)
 
 func _on_xr_button(button: String, c: XRController3D, pressed: bool) -> void:
+	if recall != null and (recall.blocks_gameplay() or (pressed and recall.hit(recall._sample(hand_of(c))))):
+		return
 	var is_right := c.tracker == "right_hand"
 	if pressed:
 		haptic_controller(c, 0.28, 0.035)

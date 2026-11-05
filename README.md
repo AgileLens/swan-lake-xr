@@ -97,3 +97,9 @@ Music, source and rights: [CREDITS.md](CREDITS.md). Engine: Godot (MIT). XR load
 `godotengine/godot-demo-projects` (MIT). Everything else is procedural: © Agile Lens, released under the [MIT License](LICENSE).
 
 Built by **Agile Lens**: real-time immersive design, NYC.
+
+## Reopening the menu
+
+After Start or Continue, the small **MENU · PINCH** target stays below and to the right of your view, within reach. Bring a hand to it and pinch; you can also point at it and pinch. The same target reads **RESUME · PINCH** while settings are open. Release the opening pinch before choosing a setting, and release Resume before gameplay continues. The live phase, progress and world stay in place; this route does not start a new run or reload a save. Controllers use the same target with a trigger and a short pulse. Bare hands receive the visible Menu/Resume acknowledgement without physical vibration.
+
+`godot --headless --xr-mode off --path project -s tests/menu_recall_checks.gd` checks target selection and release safety. `tests/recall_integration.gd` checks the shipping scene's open/pause/Resume route against its live state. Both require the existing qualified asset/import inputs; a source checkout missing ignored media is not a passing runtime gate.
